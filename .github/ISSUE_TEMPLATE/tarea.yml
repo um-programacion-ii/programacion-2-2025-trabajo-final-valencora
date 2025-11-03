@@ -1,0 +1,51 @@
+name: "Plantilla genérica de Issue"
+description: "Template con campos de Título, Descripción, Requisitos, Criterios de Aceptación y Labels"
+title: "[Issue] "
+labels: []
+assignees: []
+body:
+  - type: markdown
+
+    attributes:
+      value: |
+        🔖 **Por favor completa los siguientes campos para describir tu Issue.**
+
+  - type: textarea
+
+    id: descripcion
+    attributes:
+      label: "Descripción"
+      description: "Explica lo que se busca lograr"
+      placeholder: |
+        Crear el sistema de préstamos que utilice hilos y el patrón productor-consumidor para procesar solicitudes de préstamo en tiempo real.
+    validations:
+      required: true
+
+  - type: textarea
+
+    id: requisitos
+    attributes:
+      label: "Requisitos"
+      description: "Lista las tareas o requisitos clave"
+      placeholder: |
+        - Implementar BlockingQueue para solicitudes de préstamo
+        - Crear procesador de solicitudes usando ExecutorService
+        - Implementar sistema de notificaciones
+        - Asegurar thread-safety en operaciones de préstamo
+    validations:
+      required: true
+
+  - type: textarea
+
+    id: criterios_aceptacion
+    attributes:
+      label: "Criterios de Aceptación"
+      description: "Define cómo saber que el Issue está completo"
+      placeholder: |
+        - Sistema procesa préstamos concurrentemente
+        - Manejo adecuado de excepciones
+        - Documentación de diseño
+    validations:
+      required: true
+
+
