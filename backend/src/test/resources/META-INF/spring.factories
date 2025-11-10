@@ -1,0 +1,5 @@
+org.springframework.test.context.ContextCustomizerFactory = \
+    com.um.eventosbackend.config.\
+    SqlTestContainersSpringContextCustomizerFactory,com.um.eventosbackend.\
+    config.TestContainersSpringContextCustomizerFactory,com.um.eventosbackend.\
+    config.KafkaTestContainersSpringContextCustomizerFactory
