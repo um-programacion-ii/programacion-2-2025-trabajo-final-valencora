@@ -2,6 +2,25 @@
 
 This application was generated using JHipster 8.11.0, you can find documentation and help at [https://www.jhipster.tech/documentation-archive/v8.11.0](https://www.jhipster.tech/documentation-archive/v8.11.0).
 
+## Arranque rápido (dev)
+
+Requisitos locales:
+- PostgreSQL corriendo en `localhost:5432` con base `backend` y usuario `backend`
+- Redis corriendo en `localhost:6379`
+
+Comandos:
+```bash
+# Instalar dependencias frontend recomendadas por JHipster (una sola vez o cuando cambian)
+./npmw install
+
+# Levantar la app en modo desarrollo
+./mvnw
+```
+
+Perfiles:
+- Desarrollo: `dev` (usa PostgreSQL local y Redis para caché)
+- Producción: `prod` (configurar credenciales en `application-prod.yml`)
+
 ## Project Structure
 
 Node is required for generation and recommended for development. `package.json` is always generated for a better development experience with prettier, commit hooks, scripts and so on.

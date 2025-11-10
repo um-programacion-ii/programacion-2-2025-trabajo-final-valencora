@@ -310,6 +310,14 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>elasticsearch</artifactId>
             <scope>test</scope>
@@ -714,11 +722,11 @@
                         </pluginExtensions>
                     </configuration>
                     <dependencies>
-                        <dependency>
-                            <groupId>com.google.cloud.tools</groupId>
-                            <artifactId>jib-spring-boot-extension-maven</artifactId>
-                            <version>0.1.0</version>
-                        </dependency>
+                      <dependency>
+                        <groupId>com.google.cloud.tools</groupId>
+                        <artifactId>jib-spring-boot-extension-maven</artifactId>
+                        <version>0.1.0</version>
+                      </dependency>
                     </dependencies>
                 </plugin>
                 <plugin>
