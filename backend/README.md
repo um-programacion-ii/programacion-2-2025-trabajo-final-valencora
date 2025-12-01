@@ -6,7 +6,6 @@ This application was generated using JHipster 8.11.0, you can find documentation
 
 Requisitos locales:
 - PostgreSQL corriendo en `localhost:5432` con base `backend` y usuario `backend`
-- Redis corriendo en `localhost:6379`
 
 Comandos:
 ```bash
@@ -18,8 +17,14 @@ Comandos:
 ```
 
 Perfiles:
-- Desarrollo: `dev` (usa PostgreSQL local y Redis para caché)
+- Desarrollo: `dev` (usa PostgreSQL local)
 - Producción: `prod` (configurar credenciales en `application-prod.yml`)
+
+### Registro contra la cátedra
+
+1. Solicita el token siguiendo la guía [`docs/registro-catedra.md`](docs/registro-catedra.md).
+2. Configura la URL base y token en `application-*.yml` o mediante `CATEDRA_AUTH_TOKEN`.
+3. Verifica el estado del token con `GET /api/admin/catedra-token` (requiere rol `ROLE_ADMIN`).
 
 ## Project Structure
 
