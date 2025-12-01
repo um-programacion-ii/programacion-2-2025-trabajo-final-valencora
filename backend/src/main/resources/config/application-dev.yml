@@ -76,9 +76,11 @@ jhipster:
   # CORS is only enabled by default with the "dev" profile
   cors:
     # Allow Ionic for JHipster by default (* no longer allowed in Spring Boot 2.4+)
-    allowed-origins: 'http://localhost:8100,https://localhost:8100,http://localhost:9000,https://localhost:9000'
+    # Incluye localhost para web y emuladores móviles comunes
+    allowed-origins: 'http://localhost:8100,https://localhost:8100,http://localhost:9000,https://localhost:9000,http://10.0.2.2:8080,http://127.0.0.1:8080'
     # Enable CORS when running in GitHub Codespaces
-    allowed-origin-patterns: 'https://*.githubpreview.dev'
+    # Patrones para permitir conexiones desde dispositivos móviles en desarrollo
+    allowed-origin-patterns: 'https://*.githubpreview.dev,http://10.0.2.2:*'
     allowed-methods: '*'
     allowed-headers: '*'
     exposed-headers: 'Authorization,Link,X-Total-Count,X-${jhipster.clientApp.name}-alert,X-${jhipster.clientApp.name}-error,X-${jhipster.clientApp.name}-params'
@@ -110,4 +112,14 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
-# application:
+application:
+  catedra:
+    # Servicio de la cátedra en red ZeroTier (192.168.194.0/24)
+    base-url: http://192.168.194.250:8080
+    registration-endpoint: /api/v1/agregar_usuario
+    auth-token: ${CATEDRA_AUTH_TOKEN:}
+    connect-timeout-ms: 5000
+    read-timeout-ms: 10000
+  # Servicios externos de la cátedra en ZeroTier
+  # Redis: 192.168.194.250:6379 (usado por el servicio proxy)
+  # Kafka: 192.168.194.250:9092 (usado por el servicio proxy)

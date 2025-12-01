@@ -123,4 +123,14 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
-# application:
+application:
+  catedra:
+    # Servicio de la cátedra en red ZeroTier (192.168.194.0/24)
+    base-url: http://192.168.194.250:8080
+    registration-endpoint: /api/v1/agregar_usuario
+    auth-token: ${CATEDRA_AUTH_TOKEN:}
+    connect-timeout-ms: 3000
+    read-timeout-ms: 5000
+  # Servicios externos de la cátedra en ZeroTier
+  # Redis: 192.168.194.250:6379 (usado por el servicio proxy)
+  # Kafka: 192.168.194.250:9092 (usado por el servicio proxy)
