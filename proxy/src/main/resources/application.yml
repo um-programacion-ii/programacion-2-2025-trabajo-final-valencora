@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: proxy
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:192.168.194.250:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:proxy-group-${random.value}}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: eventoChange:com.um.eventosproxy.dto.EventoChangeDTO
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  data:
+    redis:
+      host: ${REDIS_HOST:192.168.194.250}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+server:
+  port: ${SERVER_PORT:8081}
+
+application:
+  backend:
+    base-url: ${BACKEND_BASE_URL:http://localhost:8080}
+    jwt:
+      secret: ${BACKEND_JWT_SECRET:NTUyYWZmNTFlMjhhNjJiNWM5MWVlMTBlZmIwZGNhNjQ2NjYwNTYyODNmNjkyMDM1ZDM0ZjczN2E5YmY4NDc0MmJlMjI5M2I1NjFjOTY5ZDQ5NzAwNmM5YTUxOGM3YTg5NWZmN2RmNTVjOWE5YTA3YTg3YTU1M2E2NzI3NTJhNDg=}
+      token-validity-in-seconds: 86400
+  kafka:
+    topic:
+      eventos: ${KAFKA_TOPIC_EVENTOS:eventos-changes}
+
+logging:
+  level:
+    root: INFO
+    com.um.eventosproxy: DEBUG
+    org.springframework.kafka: INFO
+
