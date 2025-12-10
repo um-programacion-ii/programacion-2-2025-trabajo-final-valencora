@@ -13,8 +13,17 @@ public class CatedraAuthenticationException extends RuntimeException {
         this(HttpStatus.UNAUTHORIZED, message);
     }
 
+    public CatedraAuthenticationException(String message, Throwable cause) {
+        this(HttpStatus.UNAUTHORIZED, message, cause);
+    }
+
     public CatedraAuthenticationException(HttpStatus status, String message) {
         super(message);
+        this.status = status;
+    }
+
+    public CatedraAuthenticationException(HttpStatus status, String message, Throwable cause) {
+        super(message, cause);
         this.status = status;
     }
 
