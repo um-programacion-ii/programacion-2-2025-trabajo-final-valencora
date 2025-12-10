@@ -116,5 +116,65 @@ public class EventoMapper {
         integrante.setImagenUrl(dto.getImagenUrl());
         return integrante;
     }
+
+    // ============================
+    // Mapping a DTOs de respuesta
+    // ============================
+
+    public EventoResumenDTO toResumenDTO(Evento evento) {
+        if (evento == null) {
+            return null;
+        }
+        EventoResumenDTO dto = new EventoResumenDTO();
+        dto.setId(evento.getId());
+        dto.setTitulo(evento.getTitulo());
+        dto.setResumen(evento.getResumen());
+        dto.setFecha(evento.getFecha());
+        dto.setDireccion(evento.getDireccion());
+        dto.setPrecio(evento.getPrecio());
+        dto.setCancelado(evento.getCancelado());
+        return dto;
+    }
+
+    public EventoDetalleDTO toDetalleDTO(Evento evento) {
+        if (evento == null) {
+            return null;
+        }
+        EventoDetalleDTO dto = new EventoDetalleDTO();
+        dto.setId(evento.getId());
+        dto.setEventoIdCatedra(evento.getEventoIdCatedra());
+        dto.setTitulo(evento.getTitulo());
+        dto.setDescripcion(evento.getDescripcion());
+        dto.setResumen(evento.getResumen());
+        dto.setFecha(evento.getFecha());
+        dto.setDireccion(evento.getDireccion());
+        dto.setImagenUrl(evento.getImagenUrl());
+        dto.setPrecio(evento.getPrecio());
+        dto.setCancelado(evento.getCancelado());
+
+        if (evento.getTipo() != null) {
+            dto.setTipoNombre(evento.getTipo().getNombre());
+            dto.setTipoDescripcion(evento.getTipo().getDescripcion());
+        }
+
+        if (evento.getIntegrantes() != null) {
+            dto.setIntegrantes(
+                evento
+                    .getIntegrantes()
+                    .stream()
+                    .map(this::toDetalleIntegranteDTO)
+                    .collect(java.util.stream.Collectors.toList())
+            );
+        }
+        return dto;
+    }
+
+    private EventoDetalleDTO.IntegranteDTO toDetalleIntegranteDTO(Integrante integrante) {
+        EventoDetalleDTO.IntegranteDTO dto = new EventoDetalleDTO.IntegranteDTO();
+        dto.setNombre(integrante.getNombre());
+        dto.setDescripcion(integrante.getDescripcion());
+        dto.setImagenUrl(integrante.getImagenUrl());
+        return dto;
+    }
 }
 
