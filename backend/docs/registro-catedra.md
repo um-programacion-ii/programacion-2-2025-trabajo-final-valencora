@@ -13,7 +13,7 @@ El servicio de la cátedra está disponible en la red ZeroTier con el rango de I
 
 **Para obtener tu IP en ZeroTier:**
 ```bash
-# En Linux/Mac
+# En Linux
 ip addr show zt* | grep "inet " | awk '{print $2}' | cut -d/ -f1
 
 # O verifica en la interfaz de ZeroTier
@@ -41,8 +41,6 @@ curl -X POST "http://192.168.194.250:8080/api/v1/agregar_usuario" \
     "descripcionProyecto": "Proyecto de valentin coratolo"
   }'
 ```
-
-**Importante:** Reemplaza `192.168.194.18` con tu IP en la red ZeroTier (rango 192.168.194.0/24).
 
 La respuesta incluye el token que deberás configurar en el backend.
 
