@@ -13,6 +13,7 @@ public class ApplicationProperties {
 
     private final Liquibase liquibase = new Liquibase();
     private final Catedra catedra = new Catedra();
+    private final Proxy proxy = new Proxy();
 
     // jhipster-needle-application-properties-property
 
@@ -22,6 +23,10 @@ public class ApplicationProperties {
 
     public Catedra getCatedra() {
         return catedra;
+    }
+
+    public Proxy getProxy() {
+        return proxy;
     }
 
     // jhipster-needle-application-properties-property-getter
@@ -88,6 +93,18 @@ public class ApplicationProperties {
 
         public void setReadTimeoutMs(Integer readTimeoutMs) {
             this.readTimeoutMs = readTimeoutMs;
+        }
+    }
+
+    public static class Proxy {
+        private String baseUrl = "http://localhost:8081";
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
         }
     }
     // jhipster-needle-application-properties-property-class

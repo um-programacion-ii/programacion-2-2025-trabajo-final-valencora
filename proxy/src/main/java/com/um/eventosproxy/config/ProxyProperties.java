@@ -7,6 +7,7 @@ public class ProxyProperties {
 
     private final Backend backend = new Backend();
     private final Kafka kafka = new Kafka();
+    private final Catedra catedra = new Catedra();
 
     public Backend getBackend() {
         return backend;
@@ -14,6 +15,10 @@ public class ProxyProperties {
 
     public Kafka getKafka() {
         return kafka;
+    }
+
+    public Catedra getCatedra() {
+        return catedra;
     }
 
     public static class Backend {
@@ -71,6 +76,27 @@ public class ProxyProperties {
             public void setEventos(String eventos) {
                 this.eventos = eventos;
             }
+        }
+    }
+
+    public static class Catedra {
+        private String baseUrl = "http://192.168.194.250:8080";
+        private String authToken;
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public String getAuthToken() {
+            return authToken;
+        }
+
+        public void setAuthToken(String authToken) {
+            this.authToken = authToken;
         }
     }
 }

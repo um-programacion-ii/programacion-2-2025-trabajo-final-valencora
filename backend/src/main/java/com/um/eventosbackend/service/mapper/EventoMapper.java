@@ -6,6 +6,8 @@ import com.um.eventosbackend.domain.Integrante;
 import com.um.eventosbackend.repository.EventoTipoRepository;
 import com.um.eventosbackend.service.dto.CatedraEventoDTO;
 import com.um.eventosbackend.service.dto.CatedraIntegranteDTO;
+import com.um.eventosbackend.service.dto.EventoDetalleDTO;
+import com.um.eventosbackend.service.dto.EventoResumenDTO;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

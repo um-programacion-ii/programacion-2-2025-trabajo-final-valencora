@@ -1,0 +1,1539 @@
+{
+	"info": {
+		"_postman_id": "eventos-backend-api-tests-2025",
+		"name": "Eventos Backend - API Tests",
+		"description": "Colección completa de pruebas para el backend de eventos. Incluye autenticación, gestión de eventos, sesión de selección, asientos, administración e integración con cátedra.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Autenticación",
+			"item": [
+				{
+					"name": "Login Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+								"pm.test(\"Response has id_token\", function () {",
+								"    var jsonData = pm.response.json();",
+								"    pm.expect(jsonData).to.have.property('id_token');",
+								"    ",
+								"    // Guardar token en variable de entorno",
+								"    var token = jsonData.id_token;",
+								"    if (token && token.trim() !== '') {",
+								"        pm.environment.set(\"admin_token\", token);",
+								"        console.log(\"✅ Token de admin guardado: \" + token.substring(0, 30) + \"...\");",
+								"        console.log(\"✅ Longitud del token: \" + token.length);",
+								"    } else {",
+								"        console.log(\"❌ Error: Token vacío o inválido\");",
+								"    }",
+								"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\",\n  \"rememberMe\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/authenticate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"authenticate"
+							]
+						},
+						"description": "Inicia sesión con credenciales de administrador y guarda el token JWT en la variable de entorno."
+					},
+					"response": []
+				},
+				{
+					"name": "Login User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+								"pm.test(\"Response has id_token\", function () {",
+								"    var jsonData = pm.response.json();",
+								"    pm.expect(jsonData).to.have.property('id_token');",
+								"    ",
+								"    // Guardar token en variable de entorno",
+								"    var token = jsonData.id_token;",
+								"    if (token && token.trim() !== '') {",
+								"        pm.environment.set(\"user_token\", token);",
+								"        console.log(\"✅ Token de user guardado: \" + token.substring(0, 30) + \"...\");",
+								"    } else {",
+								"        console.log(\"❌ Error: Token vacío o inválido\");",
+								"    }",
+								"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{user_username}}\",\n  \"password\": \"{{user_password}}\",\n  \"rememberMe\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/authenticate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"authenticate"
+							]
+						},
+						"description": "Inicia sesión con credenciales de usuario normal y guarda el token JWT."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Account Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has login\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('login');",
+									"    console.log(\"Usuario autenticado:\", jsonData.login);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/account",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"account"
+							]
+						},
+						"description": "Obtiene la información de la cuenta del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logout"
+							]
+						},
+						"description": "Cierra la sesión del usuario autenticado."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados con autenticación y gestión de sesión de usuarios."
+		},
+		{
+			"name": "2. Eventos",
+			"item": [
+				{
+					"name": "Listar Eventos Activos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"Events are active (not cancelled)\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.length > 0) {",
+									"        jsonData.forEach(function(evento) {",
+									"            pm.expect(evento.cancelado).to.be.false;",
+									"        });",
+									"    }",
+									"});",
+									"",
+					"// Guardar primer evento ID automáticamente si existe",
+					"var eventos = pm.response.json();",
+					"if (eventos && eventos.length > 0) {",
+					"    pm.environment.set(\"evento_id\", eventos[0].id);",
+					"    console.log(\"✅ Evento ID guardado automáticamente:\", eventos[0].id);",
+					"    console.log(\"📋 Total de eventos:\", eventos.length);",
+					"} else {",
+					"    console.log(\"⚠️ No hay eventos. Ejecuta 'Sincronizar Eventos desde Cátedra' primero.\");",
+					"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/eventos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"eventos"
+							]
+						},
+						"description": "Obtiene la lista de eventos activos (no cancelados y no expirados). Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Detalle de Evento",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('titulo');",
+									"    pm.expect(jsonData).to.have.property('fecha');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/eventos/{{evento_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"eventos",
+								"{{evento_id}}"
+							]
+						},
+						"description": "Obtiene el detalle completo de un evento específico por su ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Evento Inexistente (Error 404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/eventos/99999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"eventos",
+								"99999"
+							]
+						},
+						"description": "Prueba de manejo de error cuando se solicita un evento que no existe."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Eventos Sin Autenticación (Error 401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/eventos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"eventos"
+							]
+						},
+						"description": "Verifica que los endpoints de eventos requieren autenticación."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para consultar eventos. Solo lectura de eventos activos."
+		},
+		{
+			"name": "3. Sesión de Selección",
+			"item": [
+				{
+					"name": "Obtener Estado de Sesión",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is valid JSON\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/sesion/estado",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sesion",
+								"estado"
+							]
+						},
+						"description": "Obtiene el estado actual de la sesión de selección del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Evento Seleccionado",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/sesion/evento/{{evento_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sesion",
+								"evento",
+								"{{evento_id}}"
+							]
+						},
+						"description": "Actualiza el evento seleccionado en la sesión del usuario."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Asientos Seleccionados",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\n  {\n    \"fila\": \"A\",\n    \"numero\": 1\n  },\n  {\n    \"fila\": \"A\",\n    \"numero\": 2\n  }\n]"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/sesion/asientos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sesion",
+								"asientos"
+							]
+						},
+						"description": "Actualiza los asientos seleccionados en la sesión del usuario."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Nombres de Personas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"A-1\": {\n    \"nombre\": \"Juan Pérez\"\n  },\n  \"A-2\": {\n    \"nombre\": \"María García\"\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/sesion/nombres",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sesion",
+								"nombres"
+							]
+						},
+						"description": "Actualiza los nombres de las personas asociadas a los asientos seleccionados."
+					},
+					"response": []
+				},
+				{
+					"name": "Guardar Estado Completo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventoId\": {{evento_id}},\n  \"asientos\": [\n    {\n      \"fila\": \"A\",\n      \"numero\": 1\n    }\n  ],\n  \"nombres\": {\n    \"A-1\": {\n      \"nombre\": \"Juan Pérez\"\n    }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/sesion/estado",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sesion",
+								"estado"
+							]
+						},
+						"description": "Guarda el estado completo de la sesión (evento, asientos y nombres)."
+					},
+					"response": []
+				},
+				{
+					"name": "Limpiar Estado de Sesión",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/sesion/estado",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"sesion",
+								"estado"
+							]
+						},
+						"description": "Elimina el estado de la sesión de selección del usuario."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gestionar el estado de la sesión de selección (evento, asientos, nombres)."
+		},
+		{
+			"name": "4. Asientos",
+			"item": [
+				{
+					"name": "Obtener Mapa de Asientos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has mapa structure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/asientos/evento/{{evento_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"asientos",
+								"evento",
+								"{{evento_id}}"
+							]
+						},
+						"description": "Obtiene el mapa de asientos para un evento específico, mostrando el estado de cada asiento (disponible, bloqueado, ocupado)."
+					},
+					"response": []
+				},
+				{
+					"name": "Bloquear Asientos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has bloqueo info\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/asientos/bloquear/{{evento_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"asientos",
+								"bloquear",
+								"{{evento_id}}"
+							]
+						},
+						"description": "Bloquea temporalmente los asientos seleccionados en la sesión del usuario para un evento específico."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gestionar asientos de eventos en el backend."
+		},
+		{
+			"name": "4.1. Asientos (Proxy - Puerto 8081)",
+			"item": [
+				{
+					"name": "Obtener Mapa de Asientos (Proxy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has mapa structure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"    pm.expect(jsonData).to.have.property('eventoId');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{proxy_url}}/api/asientos/evento/{{evento_id}}",
+							"host": [
+								"{{proxy_url}}"
+							],
+							"path": [
+								"api",
+								"asientos",
+								"evento",
+								"{{evento_id}}"
+							]
+						},
+						"description": "Obtiene el mapa de asientos desde el servicio proxy (puerto 8081). El proxy usa Redis para cachear el estado de los asientos."
+					},
+					"response": []
+				},
+				{
+					"name": "Bloquear Asientos (Proxy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has bloqueo info\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"    pm.expect(jsonData).to.have.property('exitoso');",
+									"});",
+									"",
+									"// Nota: Este endpoint requiere conexión al servicio de la cátedra (ZeroTier)",
+									"if (pm.response.json().exitoso === false) {",
+									"    console.log(\"⚠️ Bloqueo falló. Verifica conexión a ZeroTier y token de cátedra.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventoId\": {{evento_id}},\n  \"asientos\": [\n    {\n      \"fila\": \"A\",\n      \"numero\": 1\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{proxy_url}}/api/asientos/bloquear",
+							"host": [
+								"{{proxy_url}}"
+							],
+							"path": [
+								"api",
+								"asientos",
+								"bloquear"
+							]
+						},
+						"description": "Bloquea asientos a través del servicio proxy. El proxy se comunica con el servicio de la cátedra para bloquear los asientos. Requiere conexión a ZeroTier y token de cátedra configurado."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints del servicio proxy (puerto 8081) para gestionar asientos. El proxy usa Redis para cache y se comunica con el servicio de la cátedra."
+		},
+		{
+			"name": "5. Administración",
+			"item": [
+				{
+					"name": "Verificar Token de Cátedra",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+					"pm.test(\"Response has token status\", function () {",
+					"    var jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.have.property('tokenPresent');",
+					"    pm.expect(jsonData).to.have.property('baseUrl');",
+					"    ",
+					"    // Guardar baseUrl automáticamente si está presente",
+					"    if (jsonData.baseUrl) {",
+					"        pm.environment.set(\"catedra_base_url\", jsonData.baseUrl);",
+					"    }",
+					"    ",
+					"    console.log(\"Token presente:\", jsonData.tokenPresent);",
+					"    console.log(\"Base URL:\", jsonData.baseUrl);",
+					"    ",
+					"    if (!jsonData.tokenPresent) {",
+					"        console.log(\"⚠️ No hay token configurado. Ejecuta 'Registrar Backend en Cátedra' y luego 'Actualizar Token de Cátedra'\");",
+					"    }",
+					"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/catedra-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"catedra-token"
+							]
+						},
+						"description": "Verifica el estado del token de autenticación con el servicio de la cátedra. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Actualizar Token de Cátedra",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Si hay un token de cátedra guardado, usarlo automáticamente",
+									"var catedraToken = pm.environment.get(\"catedra_token\");",
+									"if (catedraToken) {",
+									"    var body = JSON.parse(pm.request.body.raw);",
+									"    body.token = catedraToken;",
+									"    pm.request.body.raw = JSON.stringify(body);",
+									"    console.log(\"✅ Usando token de cátedra guardado automáticamente\");",
+									"} else {",
+									"    console.log(\"⚠️ No hay token de cátedra guardado. Usa el token recibido del registro.\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"",
+									"console.log(\"✅ Token de cátedra actualizado en el backend\");",
+									"console.log(\"💡 Ahora puedes ejecutar 'Sincronizar Eventos desde Cátedra'\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{catedra_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/catedra-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"catedra-token"
+							]
+						},
+						"description": "Actualiza el token de autenticación con el servicio de la cátedra. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Token de Cátedra",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/catedra-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"catedra-token"
+							]
+						},
+						"description": "Elimina el token de autenticación con el servicio de la cátedra. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Acceso a Token Sin Ser Admin (Error 403)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{user_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/catedra-token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"catedra-token"
+							]
+						},
+						"description": "Verifica que los endpoints de administración requieren rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Usuarios (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/users?page=0&size=20&sort=id,asc",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0"
+								},
+								{
+									"key": "size",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "id,asc"
+								}
+							]
+						},
+						"description": "Obtiene la lista de usuarios del sistema. Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"All services are UP\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.equal(\"UP\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/management/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"management",
+								"health"
+							]
+						},
+						"description": "Verifica el estado de salud de la aplicación y sus servicios dependientes."
+					},
+					"response": []
+				},
+				{
+					"name": "Métricas",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/management/metrics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"management",
+								"metrics"
+							]
+						},
+						"description": "Obtiene las métricas de la aplicación (JVM, HTTP, base de datos, etc.). Requiere rol ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Sincronizar Eventos desde Cátedra",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+					"pm.test(\"Status code is 200\", function () {",
+					"    pm.response.to.have.status(200);",
+					"});",
+					"",
+					"console.log(\"✅ Eventos sincronizados desde la cátedra\");",
+					"console.log(\"💡 Ahora ejecuta 'Listar Eventos Activos' para ver los eventos sincronizados\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/admin/eventos/sincronizar",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"eventos",
+								"sincronizar"
+							]
+						},
+						"description": "Sincroniza todos los eventos desde el servicio de la cátedra. Requiere rol ADMIN y token de cátedra configurado. Este endpoint obtiene los eventos del servicio externo y los guarda/actualiza en la base de datos local."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de administración. Requieren rol ADMIN."
+		},
+		{
+			"name": "6. Integración Cátedra",
+			"item": [
+				{
+					"name": "Registrar Backend en Cátedra",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 201\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+									"});",
+									"",
+					"// Si la respuesta incluye el token, guardarlo automáticamente",
+					"if (pm.response.code === 200 || pm.response.code === 201) {",
+					"    try {",
+					"        var jsonData = pm.response.json();",
+					"        if (jsonData.token) {",
+					"            pm.environment.set(\"catedra_token\", jsonData.token);",
+					"            // También actualizar el token en el backend automáticamente",
+					"            console.log(\"✅ Token de cátedra recibido: \" + jsonData.token.substring(0, 20) + \"...\");",
+					"            console.log(\"💡 Ejecuta 'Actualizar Token de Cátedra' para configurarlo en el backend\");",
+					"        }",
+					"    } catch (e) {",
+					"        console.log(\"No se pudo parsear la respuesta como JSON\");",
+					"    }",
+					"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"emicoratolo\",\n  \"password\": \"emi123\",\n  \"firstName\": \"Emiliano\",\n  \"lastName\": \"Coratollo\",\n  \"email\": \"e.coratolo@alumno.um.edu.ar\",\n  \"nombreAlumno\": \"Emiliano Coratollo\",\n  \"descripcionProyecto\": \"Proyecto de Emiliano Coratollo\"\n}"
+						},
+						"url": {
+							"raw": "{{catedra_base_url}}/api/v1/agregar_usuario",
+							"host": [
+								"{{catedra_base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"agregar_usuario"
+							]
+						},
+						"description": "Registra el backend en el servicio de la cátedra. Requiere estar conectado a la red ZeroTier. Este endpoint es del servicio externo de la cátedra, no del backend local."
+					},
+					"response": []
+				},
+				{
+					"name": "Recibir Notificación de Evento",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventoIdCatedra\": 123,\n  \"tipoCambio\": \"CREADO\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/admin/eventos/notificacion",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"eventos",
+								"notificacion"
+							]
+						},
+						"description": "Recibe una notificación del servicio de la cátedra sobre cambios en eventos. Requiere rol ADMIN."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints relacionados con la integración con el servicio de la cátedra."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Script pre-request a nivel de colección",
+					"// Automáticamente usa el token guardado para requests autenticados",
+					"",
+					"// NO aplicar autenticación a endpoints de login/register",
+					"const url = pm.request.url.toString();",
+					"const isAuthEndpoint = url.includes('/api/authenticate') || url.includes('/api/register') || url.includes('/api/activate') || url.includes('/api/account/reset-password/init') || url.includes('/api/account/reset-password/finish');",
+					"",
+					"if (isAuthEndpoint) {",
+					"    // Los endpoints de autenticación NO deben tener token",
+					"    return;",
+					"}",
+					"",
+					"// Obtener tokens de las variables de entorno",
+					"let adminToken = pm.environment.get(\"admin_token\");",
+					"let userToken = pm.environment.get(\"user_token\");",
+					"let token = adminToken || userToken;",
+					"",
+					"// Limpiar el token si está vacío o es solo espacios",
+					"if (token && typeof token === 'string') {",
+					"    token = token.trim();",
+					"    if (token === '' || token === 'undefined' || token === 'null') {",
+					"        token = null;",
+					"    }",
+					"}",
+					"",
+					"// Si el request tiene autenticación Bearer, actualizar el token automáticamente",
+					"if (pm.request.auth && pm.request.auth.type === 'bearer') {",
+					"    if (token && token.length > 0) {",
+					"        // Método 1: Actualizar el valor del bearer token directamente",
+					"        try {",
+					"            if (pm.request.auth.bearer && pm.request.auth.bearer.length > 0) {",
+					"                pm.request.auth.bearer[0].value = token;",
+					"            }",
+					"        } catch (e) {",
+					"            // Ignorar si no se puede modificar",
+					"        }",
+					"        ",
+					"        // Método 2: Agregar/actualizar header Authorization (más confiable)",
+					"        const authHeader = 'Bearer ' + token;",
+					"        const existingHeader = pm.request.headers.get('Authorization');",
+					"        if (existingHeader) {",
+					"            pm.request.headers.upsert({",
+					"                key: 'Authorization',",
+					"                value: authHeader",
+					"            });",
+					"        } else {",
+					"            pm.request.headers.add({",
+					"                key: 'Authorization',",
+					"                value: authHeader",
+					"            });",
+					"        }",
+					"        ",
+					"        console.log(\"✅ Token aplicado automáticamente (longitud: \" + token.length + \")\");",
+					"    } else {",
+					"        console.log(\"⚠️ Token no encontrado. Ejecuta primero 'Login Admin' o 'Login User'.\");",
+					"        console.log(\"   admin_token: \" + (adminToken ? \"existe (\" + adminToken.length + \" chars)\" : \"vacío\"));",
+					"        console.log(\"   user_token: \" + (userToken ? \"existe (\" + userToken.length + \" chars)\" : \"vacío\"));",
+					"    }",
+					"}",
+					"",
+					"// Auto-completar base_url si no está configurado",
+					"if (!pm.environment.get(\"base_url\")) {",
+					"    pm.environment.set(\"base_url\", \"http://localhost:8080\");",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Scripts de test a nivel de colección",
+					"// Estos se ejecutan después de cada request",
+					"",
+					"// Si el request fue exitoso y es un login, el token ya se guardó en el test del request",
+					"// Aquí podemos agregar lógica adicional si es necesario"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
+

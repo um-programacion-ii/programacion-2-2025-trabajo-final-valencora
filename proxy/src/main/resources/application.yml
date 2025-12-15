@@ -34,6 +34,9 @@ application:
     jwt:
       secret: ${BACKEND_JWT_SECRET:NTUyYWZmNTFlMjhhNjJiNWM5MWVlMTBlZmIwZGNhNjQ2NjYwNTYyODNmNjkyMDM1ZDM0ZjczN2E5YmY4NDc0MmJlMjI5M2I1NjFjOTY5ZDQ5NzAwNmM5YTUxOGM3YTg5NWZmN2RmNTVjOWE5YTA3YTg3YTU1M2E2NzI3NTJhNDg=}
       token-validity-in-seconds: 86400
+  catedra:
+    base-url: ${CATEDRA_BASE_URL:http://192.168.194.250:8080}
+    auth-token: ${CATEDRA_AUTH_TOKEN:eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2YWxlbiIsImV4cCI6MTc2ODMzODgxNCwiYXV0aCI6IlJPTEVfVVNFUiIsImlhdCI6MTc2NTc0NjgxNH0.PMHBuaHlbM7B3NhzG5DCIHD5chVq4rAqKEKQnP9iwoUkwnf8O0LL3pxNJAnLbLQr4aSuv1Z_Fq8B7sm--HN_ZA}
   kafka:
     topic:
       eventos: ${KAFKA_TOPIC_EVENTOS:eventos-changes}
