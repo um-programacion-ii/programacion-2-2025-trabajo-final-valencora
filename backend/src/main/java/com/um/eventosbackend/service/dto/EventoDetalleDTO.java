@@ -1,5 +1,6 @@
 package com.um.eventosbackend.service.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,6 +27,39 @@ public class EventoDetalleDTO implements Serializable {
     private String tipoDescripcion;
 
     private List<IntegranteDTO> integrantes = new ArrayList<>();
+
+    @JsonProperty("asientos")
+    private List<AsientoBloqueadoDTO> asientos = new ArrayList<>();
+
+    public static class AsientoBloqueadoDTO implements Serializable {
+        private Integer fila;
+        private Integer columna;
+        private String estado;
+
+        public Integer getFila() {
+            return fila;
+        }
+
+        public void setFila(Integer fila) {
+            this.fila = fila;
+        }
+
+        public Integer getColumna() {
+            return columna;
+        }
+
+        public void setColumna(Integer columna) {
+            this.columna = columna;
+        }
+
+        public String getEstado() {
+            return estado;
+        }
+
+        public void setEstado(String estado) {
+            this.estado = estado;
+        }
+    }
 
     public static class IntegranteDTO implements Serializable {
         private String nombre;
@@ -160,6 +194,12 @@ public class EventoDetalleDTO implements Serializable {
     public void setIntegrantes(List<IntegranteDTO> integrantes) {
         this.integrantes = integrantes != null ? integrantes : new ArrayList<>();
     }
+
+    public List<AsientoBloqueadoDTO> getAsientos() {
+        return asientos;
+    }
+
+    public void setAsientos(List<AsientoBloqueadoDTO> asientos) {
+        this.asientos = asientos != null ? asientos : new ArrayList<>();
+    }
 }
-
-

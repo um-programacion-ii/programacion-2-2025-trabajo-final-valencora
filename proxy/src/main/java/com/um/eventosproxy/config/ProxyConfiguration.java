@@ -2,7 +2,11 @@ package com.um.eventosproxy.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.um.eventosproxy.service.catedra.CatedraTokenInterceptor;
+import java.time.Duration;
+import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -23,6 +27,31 @@ public class ProxyConfiguration {
         factory.setConnectTimeout(5000);
         factory.setReadTimeout(10000);
         return new RestTemplate(factory);
+    }
+
+    @Bean(name = "catedraRestTemplate")
+    public RestTemplate catedraRestTemplate(
+        RestTemplateBuilder builder,
+        ProxyProperties proxyProperties,
+        CatedraTokenInterceptor catedraTokenInterceptor
+    ) {
+        ProxyProperties.Catedra catedraProps = proxyProperties.getCatedra();
+
+        if (catedraProps.getBaseUrl() == null || catedraProps.getBaseUrl().isBlank()) {
+            throw new IllegalStateException("Debe configurar application.catedra.base-url para invocar a la cátedra");
+        }
+
+        return builder
+            .rootUri(catedraProps.getBaseUrl())
+            .setConnectTimeout(Duration.ofMillis(5000))
+            .setReadTimeout(Duration.ofMillis(10000))
+            .interceptors(List.of(catedraTokenInterceptor))
+            .build();
+    }
+
+    @Bean
+    public CatedraTokenInterceptor catedraTokenInterceptor(ProxyProperties proxyProperties) {
+        return new CatedraTokenInterceptor(proxyProperties);
     }
 
     @Bean

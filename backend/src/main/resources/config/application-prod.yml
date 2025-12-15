@@ -128,9 +128,11 @@ application:
     # Servicio de la cátedra en red ZeroTier (192.168.194.0/24)
     base-url: http://192.168.194.250:8080
     registration-endpoint: /api/v1/agregar_usuario
-    auth-token: ${CATEDRA_AUTH_TOKEN:}
+    auth-token: ${CATEDRA_AUTH_TOKEN:eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ2YWxlbiIsImV4cCI6MTc2ODMzODgxNCwiYXV0aCI6IlJPTEVfVVNFUiIsImlhdCI6MTc2NTc0NjgxNH0.PMHBuaHlbM7B3NhzG5DCIHD5chVq4rAqKEKQnP9iwoUkwnf8O0LL3pxNJAnLbLQr4aSuv1Z_Fq8B7sm--HN_ZA}
     connect-timeout-ms: 3000
     read-timeout-ms: 5000
   # Servicios externos de la cátedra en ZeroTier
   # Redis: 192.168.194.250:6379 (usado por el servicio proxy)
   # Kafka: 192.168.194.250:9092 (usado por el servicio proxy)
+  proxy:
+    base-url: ${PROXY_BASE_URL:http://localhost:8081}
