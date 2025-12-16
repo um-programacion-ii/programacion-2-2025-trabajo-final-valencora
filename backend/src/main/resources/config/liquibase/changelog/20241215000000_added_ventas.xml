@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20241215000000-1" author="assistant">
+        <createSequence sequenceName="venta_seq" startValue="1"/>
+        <createSequence sequenceName="asiento_venta_seq" startValue="1"/>
+    </changeSet>
+
+    <changeSet id="20241215000000-2" author="assistant">
+        <createTable tableName="venta">
+            <column name="id" type="bigint" defaultValueComputed="nextval('venta_seq')" remarks="Primary key">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_venta"/>
+            </column>
+            <column name="venta_id_catedra" type="bigint" remarks="ID de la venta en el servicio de la cátedra"/>
+            <column name="evento_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_venta" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="precio_venta" type="numeric(21,2)"/>
+            <column name="resultado" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mensaje" type="varchar(500)"/>
+            <column name="intentos_reintento" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ultimo_intento_reintento" type="timestamp"/>
+            <!-- Auditoría -->
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="timestamp"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="timestamp"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="venta" baseColumnNames="user_id"
+                                 constraintName="fk_venta_user"
+                                 referencedTableName="jhi_user" referencedColumnNames="id"/>
+        <createIndex tableName="venta" indexName="idx_venta_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="venta" indexName="idx_venta_evento_id">
+            <column name="evento_id"/>
+        </createIndex>
+        <createIndex tableName="venta" indexName="idx_venta_resultado">
+            <column name="resultado"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20241215000000-3" author="assistant">
+        <createTable tableName="asiento_venta">
+            <column name="id" type="bigint" defaultValueComputed="nextval('asiento_venta_seq')" remarks="Primary key">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="pk_asiento_venta"/>
+            </column>
+            <column name="venta_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fila" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="numero" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nombre_persona" type="varchar(100)"/>
+            <column name="apellido_persona" type="varchar(100)"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="asiento_venta" baseColumnNames="venta_id"
+                                 constraintName="fk_asiento_venta_venta"
+                                 referencedTableName="venta" referencedColumnNames="id"/>
+        <createIndex tableName="asiento_venta" indexName="idx_asiento_venta_venta_id">
+            <column name="venta_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+
