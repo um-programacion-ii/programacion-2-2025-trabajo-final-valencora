@@ -291,7 +291,23 @@
 									"    pm.expect(jsonData).to.have.property('id');",
 									"    pm.expect(jsonData).to.have.property('titulo');",
 									"    pm.expect(jsonData).to.have.property('fecha');",
-									"});"
+									"    pm.expect(jsonData).to.have.property('asientos');",
+									"});",
+									"",
+									"// Verificar asientos bloqueados en el detalle y guardar eventoIdCatedra",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.eventoIdCatedra) {",
+									"    pm.environment.set(\"evento_id_catedra\", jsonData.eventoIdCatedra);",
+									"    console.log(\"✅ eventoIdCatedra guardado:\", jsonData.eventoIdCatedra);",
+									"}",
+									"if (jsonData.asientos && jsonData.asientos.length > 0) {",
+									"    console.log(\"✅ Asientos bloqueados en el detalle:\", jsonData.asientos.length);",
+									"    jsonData.asientos.forEach(function(asiento) {",
+									"        console.log(\"  - Fila:\", asiento.fila, \"Columna:\", asiento.columna, \"Estado:\", asiento.estado);",
+									"    });",
+									"} else {",
+									"    console.log(\"ℹ️ No hay asientos bloqueados para este evento\");",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -748,7 +764,7 @@
 								"{{evento_id}}"
 							]
 						},
-						"description": "Obtiene el mapa de asientos para un evento específico, mostrando el estado de cada asiento (disponible, bloqueado, ocupado)."
+						"description": "Obtiene el mapa de asientos para un evento específico desde el backend. El backend consulta al proxy que lee desde Redis. Muestra todos los asientos con su estado (BLOQUEADO, OCUPADO, LIBRE)."
 					},
 					"response": []
 				},
@@ -797,7 +813,7 @@
 								"{{evento_id}}"
 							]
 						},
-						"description": "Bloquea temporalmente los asientos seleccionados en la sesión del usuario para un evento específico."
+						"description": "Bloquea temporalmente los asientos seleccionados en la sesión del usuario para un evento específico. Usa la sesión del usuario autenticado para obtener los asientos a bloquear."
 					},
 					"response": []
 				}
@@ -872,11 +888,19 @@
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData).to.be.an('object');",
 									"    pm.expect(jsonData).to.have.property('exitoso');",
+									"    pm.expect(jsonData).to.have.property('resultado');",
 									"});",
 									"",
-									"// Nota: Este endpoint requiere conexión al servicio de la cátedra (ZeroTier)",
-									"if (pm.response.json().exitoso === false) {",
-									"    console.log(\"⚠️ Bloqueo falló. Verifica conexión a ZeroTier y token de cátedra.\");",
+									"// Verificar resultado del bloqueo",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.exitoso === true || jsonData.resultado === true) {",
+									"    console.log(\"✅ Bloqueo exitoso. Asientos bloqueados:\", jsonData.asientosBloqueados ? jsonData.asientosBloqueados.length : 0);",
+									"    if (jsonData.asientosNoDisponibles && jsonData.asientosNoDisponibles.length > 0) {",
+									"        console.log(\"⚠️ Algunos asientos no pudieron bloquearse:\", jsonData.asientosNoDisponibles.length);",
+									"    }",
+									"} else {",
+									"    console.log(\"❌ Bloqueo falló:\", jsonData.mensaje || jsonData.descripcion);",
+									"    console.log(\"💡 Verifica conexión a ZeroTier y token de cátedra.\");",
 									"}"
 								],
 								"type": "text/javascript"
@@ -903,7 +927,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"eventoId\": {{evento_id}},\n  \"asientos\": [\n    {\n      \"fila\": \"A\",\n      \"numero\": 1\n    }\n  ]\n}"
+							"raw": "{\n  \"eventoId\": {{evento_id}},\n  \"asientos\": [\n    {\n      \"fila\": 2,\n      \"columna\": 2\n    },\n    {\n      \"fila\": 2,\n      \"columna\": 3\n    }\n  ]\n}"
 						},
 						"url": {
 							"raw": "{{proxy_url}}/api/asientos/bloquear",
@@ -916,7 +940,74 @@
 								"bloquear"
 							]
 						},
-						"description": "Bloquea asientos a través del servicio proxy. El proxy se comunica con el servicio de la cátedra para bloquear los asientos. Requiere conexión a ZeroTier y token de cátedra configurado."
+						"description": "Bloquea asientos a través del servicio proxy. El proxy se comunica con el servicio de la cátedra para bloquear los asientos y actualiza Redis. Formato: eventoId (Long), asientos (Array con fila y columna como Integer). Requiere conexión a ZeroTier y token de cátedra configurado."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Mapa de Asientos (Proxy) - Verificar Bloqueados",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has mapa structure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"    pm.expect(jsonData).to.have.property('eventoId');",
+									"    pm.expect(jsonData).to.have.property('asientos');",
+									"});",
+									"",
+									"// Contar asientos bloqueados",
+									"var jsonData = pm.response.json();",
+									"var bloqueados = jsonData.asientos.filter(function(a) { return a.estado === 'BLOQUEADO'; });",
+									"var ocupados = jsonData.asientos.filter(function(a) { return a.estado === 'OCUPADO'; });",
+									"var libres = jsonData.asientos.filter(function(a) { return a.estado === 'LIBRE'; });",
+									"",
+									"console.log(\"📊 Estado de asientos:\");",
+									"console.log(\"  - Bloqueados:\", bloqueados.length);",
+									"console.log(\"  - Ocupados:\", ocupados.length);",
+									"console.log(\"  - Libres:\", libres.length);",
+									"console.log(\"  - Total:\", jsonData.asientos.length);",
+									"",
+									"if (bloqueados.length > 0) {",
+									"    console.log(\"✅ Asientos bloqueados encontrados:\", bloqueados.map(function(a) { return a.fila + '-' + a.numero; }).join(', '));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{proxy_url}}/api/asientos/evento/{{evento_id}}",
+							"host": [
+								"{{proxy_url}}"
+							],
+							"path": [
+								"api",
+								"asientos",
+								"evento",
+								"{{evento_id}}"
+							]
+						},
+						"description": "Obtiene el mapa de asientos desde el servicio proxy (puerto 8081). El proxy lee desde Redis (clave evento_{id}). Muestra todos los asientos con su estado (BLOQUEADO, OCUPADO, LIBRE)."
 					},
 					"response": []
 				}
@@ -1439,6 +1530,325 @@
 				}
 			],
 			"description": "Endpoints relacionados con la integración con el servicio de la cátedra."
+		},
+		{
+			"name": "7. Ventas",
+			"item": [
+				{
+					"name": "Procesar Venta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Response has venta info\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"    pm.expect(jsonData).to.have.property('resultado');",
+									"    pm.expect(jsonData).to.have.property('eventoId');",
+									"});",
+									"",
+									"// Guardar ID de venta si fue exitosa",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.resultado === 'EXITOSA' && jsonData.id) {",
+									"    pm.environment.set(\"venta_id\", jsonData.id);",
+									"    console.log(\"✅ Venta procesada exitosamente. ID:\", jsonData.id);",
+									"    console.log(\"💰 Precio total:\", jsonData.precioVenta);",
+									"} else {",
+									"    console.log(\"❌ Venta falló:\", jsonData.mensaje);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventoId\": {{evento_id_catedra}},\n  \"asientos\": [\n    {\n      \"fila\": \"2\",\n      \"numero\": 2,\n      \"nombrePersona\": \"Juan\",\n      \"apellidoPersona\": \"Pérez\"\n    },\n    {\n      \"fila\": \"2\",\n      \"numero\": 3,\n      \"nombrePersona\": \"María\",\n      \"apellidoPersona\": \"García\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/ventas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ventas"
+							]
+						},
+						"description": "Procesa una nueva venta de asientos para un evento. El backend valida que los asientos estén bloqueados en la sesión del usuario, confirma la venta con la cátedra a través del proxy, y guarda el resultado en la base de datos. Requiere que los asientos estén previamente bloqueados en la sesión del usuario.\n\nIMPORTANTE: El campo 'eventoId' debe ser el 'eventoIdCatedra' (ID del evento en el servicio de la cátedra), no el ID interno del backend. Puedes obtenerlo del detalle del evento (campo 'eventoIdCatedra')."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Ventas del Usuario",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});",
+									"",
+									"// Mostrar resumen de ventas",
+									"var ventas = pm.response.json();",
+									"console.log(\"📋 Total de ventas:\", ventas.length);",
+									"if (ventas.length > 0) {",
+									"    var exitosas = ventas.filter(function(v) { return v.resultado === 'EXITOSA'; });",
+									"    var fallidas = ventas.filter(function(v) { return v.resultado === 'FALLIDA'; });",
+									"    console.log(\"✅ Exitosas:\", exitosas.length);",
+									"    console.log(\"❌ Fallidas:\", fallidas.length);",
+									"    ",
+									"    // Guardar primera venta si existe",
+									"    if (ventas[0] && ventas[0].id) {",
+									"        pm.environment.set(\"venta_id\", ventas[0].id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ventas",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ventas"
+							]
+						},
+						"description": "Obtiene todas las ventas del usuario autenticado, ordenadas por fecha de venta descendente. Solo muestra ventas del usuario que realiza la petición."
+					},
+					"response": []
+				},
+				{
+					"name": "Obtener Detalle de Venta",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has venta detail\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.expect(jsonData).to.have.property('eventoId');",
+									"    pm.expect(jsonData).to.have.property('resultado');",
+									"    pm.expect(jsonData).to.have.property('asientos');",
+									"});",
+									"",
+									"// Mostrar detalles de la venta",
+									"var venta = pm.response.json();",
+									"console.log(\"📄 Detalle de venta:\");",
+									"console.log(\"  - ID:\", venta.id);",
+									"console.log(\"  - Evento ID:\", venta.eventoId);",
+									"console.log(\"  - Resultado:\", venta.resultado);",
+									"console.log(\"  - Precio:\", venta.precioVenta);",
+									"console.log(\"  - Asientos:\", venta.asientos ? venta.asientos.length : 0);",
+									"if (venta.asientos && venta.asientos.length > 0) {",
+									"    venta.asientos.forEach(function(asiento) {",
+									"        console.log(\"    • Fila:\", asiento.fila, \"Número:\", asiento.numero, \"Persona:\", asiento.nombrePersona, asiento.apellidoPersona);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ventas/{{venta_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ventas",
+								"{{venta_id}}"
+							]
+						},
+						"description": "Obtiene el detalle completo de una venta específica por su ID. Solo puede acceder a ventas propias del usuario autenticado."
+					},
+					"response": []
+				},
+				{
+					"name": "Venta Inexistente (Error 404)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/ventas/99999",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"ventas",
+								"99999"
+							]
+						},
+						"description": "Verifica el manejo de error cuando se solicita una venta que no existe o no pertenece al usuario."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gestionar ventas de asientos. Las ventas se procesan confirmando los asientos bloqueados en la sesión del usuario con el servicio de la cátedra."
+		},
+		{
+			"name": "7.1. Ventas (Proxy - Puerto 8081)",
+			"item": [
+				{
+					"name": "Confirmar Venta (Proxy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has confirmacion info\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('object');",
+									"    pm.expect(jsonData).to.have.property('resultado');",
+									"});",
+									"",
+									"// Verificar resultado de la confirmación",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.resultado === 'EXITOSA' || jsonData.resultado === true) {",
+									"    console.log(\"✅ Venta confirmada exitosamente\");",
+									"    if (jsonData.ventaIdCatedra) {",
+									"        console.log(\"📝 ID de venta en cátedra:\", jsonData.ventaIdCatedra);",
+									"    }",
+									"} else {",
+									"    console.log(\"❌ Confirmación falló:\", jsonData.mensaje);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"eventoId\": {{evento_id_catedra}},\n  \"asientos\": [\n    {\n      \"fila\": \"2\",\n      \"numero\": 2,\n      \"nombrePersona\": \"Juan\",\n      \"apellidoPersona\": \"Pérez\"\n    },\n    {\n      \"fila\": \"2\",\n      \"numero\": 3,\n      \"nombrePersona\": \"María\",\n      \"apellidoPersona\": \"García\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{proxy_url}}/api/ventas/confirmar",
+							"host": [
+								"{{proxy_url}}"
+							],
+							"path": [
+								"api",
+								"ventas",
+								"confirmar"
+							]
+						},
+						"description": "Confirma una venta con el servicio de la cátedra a través del proxy. Este endpoint se comunica directamente con la cátedra para confirmar la compra de los asientos. Requiere conexión a ZeroTier y token de cátedra configurado. Formato: eventoId (Long), asientos (Array con fila como String, numero como Integer, nombrePersona y apellidoPersona como String)."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints del servicio proxy (puerto 8081) para confirmar ventas con el servicio de la cátedra."
 		}
 	],
 	"event": [
@@ -1532,6 +1942,11 @@
 		{
 			"key": "base_url",
 			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "proxy_url",
+			"value": "http://localhost:8081",
 			"type": "string"
 		}
 	]
