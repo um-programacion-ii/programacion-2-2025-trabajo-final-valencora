@@ -86,6 +86,18 @@ public class Evento extends AbstractAuditingEntity<Long> implements Serializable
     @JsonIgnoreProperties(value = { "evento" }, allowSetters = true)
     private Set<Integrante> integrantes = new HashSet<>();
 
+    /**
+     * Número de filas de asientos del evento
+     */
+    @Column(name = "fila_asiento")
+    private Integer filaAsiento;
+
+    /**
+     * Número de columnas de asientos del evento
+     */
+    @Column(name = "column_asiento")
+    private Integer columnAsiento;
+
     public Long getId() {
         return id;
     }
@@ -192,6 +204,22 @@ public class Evento extends AbstractAuditingEntity<Long> implements Serializable
         this.integrantes.remove(integrante);
         integrante.setEvento(null);
         return this;
+    }
+
+    public Integer getFilaAsiento() {
+        return filaAsiento;
+    }
+
+    public void setFilaAsiento(Integer filaAsiento) {
+        this.filaAsiento = filaAsiento;
+    }
+
+    public Integer getColumnAsiento() {
+        return columnAsiento;
+    }
+
+    public void setColumnAsiento(Integer columnAsiento) {
+        this.columnAsiento = columnAsiento;
     }
 
     /**

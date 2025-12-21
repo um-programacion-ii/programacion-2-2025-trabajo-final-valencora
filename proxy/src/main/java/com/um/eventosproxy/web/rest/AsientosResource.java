@@ -33,7 +33,14 @@ public class AsientosResource {
         LOG.debug("REST request para obtener mapa de asientos del evento: {}", eventoId);
 
         MapaAsientosDTO mapa = redisAsientosService.obtenerMapaAsientos(eventoId);
-        return ResponseEntity.ok(mapa);
+        
+        // Solo devolver la matriz, no incluir los asientos individuales
+        MapaAsientosDTO respuesta = new MapaAsientosDTO();
+        respuesta.setEventoId(mapa.getEventoId());
+        respuesta.setMatriz(mapa.getMatriz() != null ? mapa.getMatriz() : new java.util.ArrayList<>());
+        respuesta.setAsientos(null); // null para que no se incluya en el JSON
+        
+        return ResponseEntity.ok(respuesta);
     }
 
     @PostMapping("/bloquear")

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20250115000000-1" author="assistant">
+        <comment>Agregar columna fila_asiento a la tabla evento si no existe</comment>
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="evento" columnName="fila_asiento"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="evento">
+            <column name="fila_asiento" type="integer" remarks="Número de filas de asientos del evento">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20250115000000-2" author="assistant">
+        <comment>Renombrar columna columna_asiento a column_asiento si existe la columna antigua</comment>
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <columnExists tableName="evento" columnName="columna_asiento"/>
+                <not>
+                    <columnExists tableName="evento" columnName="column_asiento"/>
+                </not>
+            </and>
+        </preConditions>
+        <renameColumn tableName="evento" oldColumnName="columna_asiento" newColumnName="column_asiento" columnDataType="integer"/>
+    </changeSet>
+
+    <changeSet id="20250115000000-3" author="assistant">
+        <comment>Agregar columna column_asiento si no existe ninguna de las dos versiones</comment>
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <columnExists tableName="evento" columnName="column_asiento"/>
+                </not>
+                <not>
+                    <columnExists tableName="evento" columnName="columna_asiento"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="evento">
+            <column name="column_asiento" type="integer" remarks="Número de columnas de asientos del evento">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
+

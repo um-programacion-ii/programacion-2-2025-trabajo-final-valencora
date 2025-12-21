@@ -48,5 +48,17 @@ public class EventoResource {
         LOG.debug("REST request to get event detail : {}", id);
         return eventoQueryService.obtenerDetalleEvento(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * {@code GET /api/eventos/catedra/:eventoIdCatedra/dimensiones} : obtiene las dimensiones (filas y columnas) de un evento por su ID de cátedra.
+     */
+    @GetMapping("/catedra/{eventoIdCatedra}/dimensiones")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<java.util.Map<String, Integer>> obtenerDimensiones(@PathVariable Long eventoIdCatedra) {
+        LOG.debug("REST request to get event dimensions for eventoIdCatedra: {}", eventoIdCatedra);
+        return eventoQueryService.obtenerDimensionesEvento(eventoIdCatedra)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
 }
 
