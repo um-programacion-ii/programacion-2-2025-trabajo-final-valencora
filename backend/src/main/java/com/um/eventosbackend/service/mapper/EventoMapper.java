@@ -45,6 +45,8 @@ public class EventoMapper {
         evento.setImagenUrl(dto.getImagenUrl());
         evento.setPrecio(dto.getPrecio());
         evento.setCancelado(dto.getCancelado() != null ? dto.getCancelado() : false);
+        evento.setFilaAsiento(dto.getFilaAsiento());
+        evento.setColumnAsiento(dto.getColumnAsiento());
 
         // Mapear tipo de evento
         if (dto.getTipo() != null && dto.getTipo().getNombre() != null) {
@@ -87,6 +89,8 @@ public class EventoMapper {
         evento.setImagenUrl(dto.getImagenUrl());
         evento.setPrecio(dto.getPrecio());
         evento.setCancelado(dto.getCancelado() != null ? dto.getCancelado() : false);
+        evento.setFilaAsiento(dto.getFilaAsiento());
+        evento.setColumnAsiento(dto.getColumnAsiento());
 
         // Actualizar tipo de evento
         if (dto.getTipo() != null && dto.getTipo().getNombre() != null) {
@@ -153,6 +157,8 @@ public class EventoMapper {
         dto.setImagenUrl(evento.getImagenUrl());
         dto.setPrecio(evento.getPrecio());
         dto.setCancelado(evento.getCancelado());
+        dto.setFilaAsientos(evento.getFilaAsiento());
+        dto.setColumnAsientos(evento.getColumnAsiento());
 
         if (evento.getTipo() != null) {
             dto.setTipoNombre(evento.getTipo().getNombre());

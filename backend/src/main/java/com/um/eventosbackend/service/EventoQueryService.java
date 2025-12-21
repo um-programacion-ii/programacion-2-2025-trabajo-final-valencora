@@ -60,36 +60,7 @@ public class EventoQueryService {
             .filter(e -> e.getFecha() == null || !e.getFecha().isBefore(ahora))
             .map(eventoMapper::toDetalleDTO);
 
-        // Agregar lista de asientos bloqueados
-        if (detalleOpt.isPresent()) {
-            EventoDetalleDTO detalle = detalleOpt.get();
-            try {
-                Long eventoIdCatedra = detalle.getEventoIdCatedra();
-                LOG.debug("Obteniendo asientos bloqueados para eventoIdCatedra: {}", eventoIdCatedra);
-                
-                if (eventoIdCatedra == null) {
-                    LOG.warn("eventoIdCatedra es null para evento con id: {}", id);
-                    detalle.setAsientos(new java.util.ArrayList<>());
-                } else {
-                    // Obtener mapa de asientos desde el proxy
-                    MapaAsientosDTO mapaAsientos = proxyAsientosService.obtenerMapaAsientos(eventoIdCatedra);
-                    LOG.debug("Mapa de asientos obtenido: {} asientos totales", 
-                        mapaAsientos != null && mapaAsientos.getAsientos() != null ? mapaAsientos.getAsientos().size() : 0);
-                    
-                    // Filtrar y convertir asientos bloqueados al formato requerido
-                    List<EventoDetalleDTO.AsientoBloqueadoDTO> asientosBloqueados = obtenerAsientosBloqueados(mapaAsientos);
-                    LOG.debug("Asientos bloqueados encontrados: {}", asientosBloqueados.size());
-                    detalle.setAsientos(asientosBloqueados);
-                    LOG.debug("Asientos bloqueados asignados al detalle. Tamaño final: {}", 
-                        detalle.getAsientos() != null ? detalle.getAsientos().size() : 0);
-                }
-            } catch (Exception e) {
-                LOG.error("Error al obtener asientos bloqueados para eventoId: {}, eventoIdCatedra: {}", 
-                    id, detalle.getEventoIdCatedra(), e);
-                // Si falla, simplemente no se incluyen los asientos
-                detalle.setAsientos(new java.util.ArrayList<>());
-            }
-        }
+        // No incluir asientos en el detalle del evento (no establecer la lista)
 
         return detalleOpt;
     }
@@ -164,6 +135,28 @@ public class EventoQueryService {
 
         LOG.debug("Total de asientos bloqueados procesados: {}", bloqueadosEncontrados);
         return asientosBloqueados;
+    }
+
+    /**
+     * Obtiene las dimensiones (filas y columnas) de un evento por su ID de cátedra.
+     */
+    public Optional<java.util.Map<String, Integer>> obtenerDimensionesEvento(Long eventoIdCatedra) {
+        LOG.debug("Obteniendo dimensiones del evento con eventoIdCatedra: {}", eventoIdCatedra);
+        
+        return eventoRepository.findByEventoIdCatedra(eventoIdCatedra)
+            .map(evento -> {
+                java.util.Map<String, Integer> dimensiones = new java.util.HashMap<>();
+                if (evento.getFilaAsiento() != null && evento.getColumnAsiento() != null) {
+                    dimensiones.put("filas", evento.getFilaAsiento());
+                    dimensiones.put("columnas", evento.getColumnAsiento());
+                    LOG.debug("Dimensiones encontradas: {} filas x {} columnas", 
+                        evento.getFilaAsiento(), evento.getColumnAsiento());
+                    return dimensiones;
+                } else {
+                    LOG.warn("Evento con eventoIdCatedra={} no tiene dimensiones definidas", eventoIdCatedra);
+                    return null;
+                }
+            });
     }
 }
 
