@@ -2,6 +2,7 @@ package com.um.eventosbackend;
 
 import com.um.eventosbackend.config.ApplicationProperties;
 import com.um.eventosbackend.config.CRLFLogConverter;
+import com.um.eventosbackend.service.warmup.RedisWarmupService;
 import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -15,7 +16,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import tech.jhipster.config.DefaultProfileUtil;
 import tech.jhipster.config.JHipsterConstants;
@@ -27,9 +30,11 @@ public class BackendApp {
     private static final Logger LOG = LoggerFactory.getLogger(BackendApp.class);
 
     private final Environment env;
+    private final RedisWarmupService redisWarmupService;
 
-    public BackendApp(Environment env) {
+    public BackendApp(Environment env, RedisWarmupService redisWarmupService) {
         this.env = env;
+        this.redisWarmupService = redisWarmupService;
     }
 
     /**
@@ -57,6 +62,25 @@ public class BackendApp {
             LOG.error(
                 "You have misconfigured your application! It should not " + "run with both the 'dev' and 'cloud' profiles at the same time."
             );
+        }
+        
+    }
+
+    /**
+     * Ejecuta el warm-up de Redis después de que la aplicación esté completamente lista.
+     * Esto asegura que todos los servicios estén inicializados antes de intentar
+     * bloquear asientos.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
+        // Iniciar warm-up de Redis de forma asíncrona
+        // Esto asegura que Redis tenga datos actualizados al iniciar la aplicación
+        // El bloqueo dura solo 2.5 minutos, así que no afecta significativamente a los usuarios
+        try {
+            LOG.info("Aplicación lista, iniciando warm-up de Redis...");
+            redisWarmupService.warmupRedis();
+        } catch (Exception e) {
+            LOG.warn("No se pudo iniciar el warm-up de Redis (puede ser normal si los servicios aún no están listos)", e);
         }
     }
 

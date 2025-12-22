@@ -49,19 +49,32 @@ public class RedisAsientosService {
             
             if (data == null || data.isEmpty()) {
                 LOG.warn("No se encontraron datos de asientos en Redis para eventoId: {}, key: {}", eventoId, key);
-                // Si no hay datos en Redis, intentar obtener dimensiones del evento y generar matriz completa
-                // La cátedra solo guarda asientos cuando hay bloqueos; si no existen, mostrar matriz con todos libres
-                MapaAsientosDTO mapa = crearMapaVacio(eventoId);
+                LOG.info("Intentando sincronizar Redis desde la cátedra para evento {}", eventoId);
                 
-                // Obtener dimensiones del evento desde el backend
-                java.util.Map<String, Integer> dimensiones = backendAsientosService.obtenerDimensionesEvento(eventoId);
+                // Intentar sincronizar Redis consultando la cátedra
+                boolean sincronizado = intentarSincronizarRedisDesdeCatedra(eventoId);
                 
-                // Generar representación matricial del mapa de asientos usando las dimensiones del evento
-                generarMatrizAsientos(mapa, 
-                    dimensiones != null ? dimensiones.get("filas") : null,
-                    dimensiones != null ? dimensiones.get("columnas") : null);
+                if (sincronizado) {
+                    // Reintentar leer desde Redis después de la sincronización
+                    data = redisTemplate.opsForValue().get(key);
+                    LOG.info("Después de sincronización, Redis tiene datos: {}", data != null && !data.isEmpty());
+                }
                 
-                return mapa;
+                // Si aún no hay datos después de sincronizar, generar mapa completo con todos libres
+                if (data == null || data.isEmpty()) {
+                    java.util.Map<String, Integer> dimensiones = backendAsientosService.obtenerDimensionesEvento(eventoId);
+                    
+                    // Generar mapa completo de asientos (todos libres ya que no hay nada en Redis)
+                    MapaAsientosDTO mapa = generarMapaCompletoAsientos(new ArrayList<>(), dimensiones, eventoId);
+                    
+                    // Generar representación matricial del mapa de asientos usando las dimensiones del evento
+                    generarMatrizAsientos(mapa, 
+                        dimensiones != null ? dimensiones.get("filas") : null,
+                        dimensiones != null ? dimensiones.get("columnas") : null);
+                    
+                    return mapa;
+                }
+                // Si hay datos después de sincronizar, continuar con el flujo normal de parseo
             }
 
             LOG.info("Datos obtenidos de Redis (primeros 1000 caracteres): {}", 
@@ -128,35 +141,39 @@ public class RedisAsientosService {
                 throw parseException;
             }
             
-            LOG.info("Asientos parseados desde Redis: {} total, {} bloqueados", 
+            LOG.info("Asientos parseados desde Redis: {} total, {} bloqueados, {} ocupados", 
                 asientos.size(),
                 asientos.stream()
                     .filter(a -> a.getEstado() == AsientoDTO.EstadoAsiento.BLOQUEADO)
+                    .count(),
+                asientos.stream()
+                    .filter(a -> a.getEstado() == AsientoDTO.EstadoAsiento.OCUPADO)
                     .count());
-
-            MapaAsientosDTO mapa = new MapaAsientosDTO();
-            mapa.setEventoId(eventoId);
-            mapa.setAsientos(asientos);
 
             // Obtener dimensiones del evento desde el backend
             java.util.Map<String, Integer> dimensiones = backendAsientosService.obtenerDimensionesEvento(eventoId);
+            
+            // Generar mapa completo de asientos usando dimensiones
+            MapaAsientosDTO mapa = generarMapaCompletoAsientos(asientos, dimensiones, eventoId);
             
             // Generar representación matricial del mapa de asientos usando las dimensiones del evento
             generarMatrizAsientos(mapa, 
                 dimensiones != null ? dimensiones.get("filas") : null,
                 dimensiones != null ? dimensiones.get("columnas") : null);
 
-            LOG.debug("Mapa de asientos obtenido: {} asientos para eventoId: {}", asientos.size(), eventoId);
+            LOG.debug("Mapa de asientos obtenido: {} asientos totales para eventoId: {}", 
+                mapa.getAsientos() != null ? mapa.getAsientos().size() : 0, eventoId);
             return mapa;
 
         } catch (Exception e) {
             LOG.error("Error al obtener mapa de asientos desde Redis para eventoId: {}, key: {}", eventoId, key, e);
             LOG.error("Stack trace completo:", e);
-            // Ante cualquier error al leer/parsear Redis, intentar generar matriz desde dimensiones
-            MapaAsientosDTO mapa = crearMapaVacio(eventoId);
-            
+            // Ante cualquier error al leer/parsear Redis, intentar generar mapa completo desde dimensiones
             // Obtener dimensiones del evento desde el backend
             java.util.Map<String, Integer> dimensiones = backendAsientosService.obtenerDimensionesEvento(eventoId);
+            
+            // Generar mapa completo de asientos (todos libres ya que no pudimos leer Redis)
+            MapaAsientosDTO mapa = generarMapaCompletoAsientos(new ArrayList<>(), dimensiones, eventoId);
             
             // Generar representación matricial del mapa de asientos usando las dimensiones del evento
             generarMatrizAsientos(mapa, 
@@ -254,6 +271,15 @@ public class RedisAsientosService {
                 estadoStr = estadoObj.toString();
             }
             
+            // Verificar expiración para bloqueos
+            Object expiraObj = data.get("expira");
+            String expiraStr = null;
+            if (expiraObj instanceof String) {
+                expiraStr = (String) expiraObj;
+            } else if (expiraObj != null) {
+                expiraStr = expiraObj.toString();
+            }
+            
             if (estadoStr != null && !estadoStr.isEmpty()) {
                 try {
                     // Normalizar el estado: "Bloqueado" -> "BLOQUEADO", "Libre" -> "LIBRE", "Ocupado" -> "OCUPADO"
@@ -262,7 +288,28 @@ public class RedisAsientosService {
                     // Mapear variaciones comunes
                     if (estadoNormalizado.equals("BLOQUEADO") || estadoNormalizado.equals("BLOQUEADOS") 
                         || estadoNormalizado.contains("BLOQUEO") || estadoNormalizado.equals("BLOQUEO EXITOSO")) {
-                        asiento.setEstado(AsientoDTO.EstadoAsiento.BLOQUEADO);
+                        // Si está bloqueado, verificar si expiró
+                        if (expiraStr != null && !expiraStr.isEmpty()) {
+                            try {
+                                java.time.Instant expira = java.time.Instant.parse(expiraStr);
+                                if (expira.isAfter(java.time.Instant.now())) {
+                                    asiento.setEstado(AsientoDTO.EstadoAsiento.BLOQUEADO);
+                                } else {
+                                    // El bloqueo expiró, marcar como libre
+                                    LOG.debug("Bloqueo expirado para asiento fila={}, numero={}, expira={}", 
+                                        asiento.getFila(), asiento.getNumero(), expiraStr);
+                                    asiento.setEstado(AsientoDTO.EstadoAsiento.LIBRE);
+                                }
+                            } catch (Exception e) {
+                                // Si hay error al parsear expira, tratar como bloqueado (por seguridad)
+                                LOG.warn("Error al parsear expira para asiento fila={}, numero={}, expira={}: {}", 
+                                    asiento.getFila(), asiento.getNumero(), expiraStr, e.getMessage());
+                                asiento.setEstado(AsientoDTO.EstadoAsiento.BLOQUEADO);
+                            }
+                        } else {
+                            // No hay expira, asumir que está bloqueado
+                            asiento.setEstado(AsientoDTO.EstadoAsiento.BLOQUEADO);
+                        }
                     } else if (estadoNormalizado.equals("OCUPADO") || estadoNormalizado.equals("OCUPADOS") 
                         || estadoNormalizado.equals("VENDIDO") || estadoNormalizado.equals("VENDIDOS")) {
                         asiento.setEstado(AsientoDTO.EstadoAsiento.OCUPADO);
@@ -293,6 +340,107 @@ public class RedisAsientosService {
         } catch (Exception e) {
             LOG.warn("Error al parsear asiento desde Redis: {}", data, e);
             return null;
+        }
+    }
+
+    /**
+     * Genera un mapa completo de asientos usando las dimensiones del evento.
+     * Los asientos que están en Redis mantienen su estado (ocupado/bloqueado).
+     * Los asientos que no están en Redis se marcan como libres.
+     * 
+     * @param asientosRedis Lista de asientos obtenidos desde Redis (solo los que tienen estado)
+     * @param dimensiones Dimensiones del evento (filas y columnas)
+     * @param eventoId ID del evento
+     * @return Mapa completo de asientos
+     */
+    private MapaAsientosDTO generarMapaCompletoAsientos(
+            List<AsientoDTO> asientosRedis, 
+            java.util.Map<String, Integer> dimensiones, 
+            Long eventoId) {
+        
+        MapaAsientosDTO mapa = new MapaAsientosDTO();
+        mapa.setEventoId(eventoId);
+        
+        // Si no hay dimensiones, retornar solo los asientos de Redis
+        if (dimensiones == null || dimensiones.get("filas") == null || dimensiones.get("columnas") == null) {
+            LOG.warn("No se pudieron obtener dimensiones del evento {}, retornando solo asientos de Redis", eventoId);
+            mapa.setAsientos(asientosRedis);
+            return mapa;
+        }
+        
+        Integer filas = dimensiones.get("filas");
+        Integer columnas = dimensiones.get("columnas");
+        
+        LOG.info("Generando mapa completo de asientos: {} filas x {} columnas = {} asientos totales", 
+            filas, columnas, filas * columnas);
+        
+        // Crear un mapa rápido para buscar asientos de Redis: "fila:numero" -> estado
+        java.util.Map<String, AsientoDTO.EstadoAsiento> mapaRedis = new java.util.HashMap<>();
+        for (AsientoDTO asiento : asientosRedis) {
+            String key = asiento.getFila() + ":" + asiento.getNumero();
+            mapaRedis.put(key, asiento.getEstado());
+        }
+        
+        // Generar todos los asientos usando las dimensiones
+        List<AsientoDTO> todosLosAsientos = new ArrayList<>(filas * columnas);
+        for (int fila = 1; fila <= filas; fila++) {
+            for (int columna = 1; columna <= columnas; columna++) {
+                AsientoDTO asiento = new AsientoDTO();
+                asiento.setFila(String.valueOf(fila));
+                asiento.setNumero(columna);
+                
+                // Buscar si este asiento está en Redis
+                String key = fila + ":" + columna;
+                AsientoDTO.EstadoAsiento estado = mapaRedis.getOrDefault(key, AsientoDTO.EstadoAsiento.LIBRE);
+                asiento.setEstado(estado);
+                
+                todosLosAsientos.add(asiento);
+            }
+        }
+        
+        mapa.setAsientos(todosLosAsientos);
+        LOG.info("Mapa completo generado: {} asientos totales ({} desde Redis, {} libres)", 
+            todosLosAsientos.size(),
+            asientosRedis.size(),
+            todosLosAsientos.size() - asientosRedis.size());
+        
+        return mapa;
+    }
+
+    /**
+     * Intenta sincronizar Redis consultando directamente el Redis compartido.
+     * Como la cátedra y el proxy usan el mismo Redis, cuando la cátedra actualiza Redis
+     * después de un bloqueo, esos datos deberían estar disponibles inmediatamente.
+     * 
+     * Este método verifica si hay datos en Redis que no se detectaron en la primera lectura,
+     * posiblemente debido a una condición de carrera o a que la cátedra acaba de actualizar Redis.
+     * 
+     * @param eventoId ID del evento a sincronizar
+     * @return true si se encontraron datos y se actualizaron, false en caso contrario
+     */
+    private boolean intentarSincronizarRedisDesdeCatedra(Long eventoId) {
+        String key = REDIS_KEY_PREFIX + eventoId;
+        LOG.info("Intentando sincronizar Redis para evento {} (key: {})", eventoId, key);
+        
+        try {
+            // Hacer una segunda lectura de Redis (puede que la cátedra haya actualizado entre lecturas)
+            String data = redisTemplate.opsForValue().get(key);
+            
+            if (data != null && !data.isEmpty()) {
+                LOG.info("Se encontraron datos en Redis después de intentar sincronizar para evento {}", eventoId);
+                return true;
+            }
+            
+            // Si aún no hay datos, Redis está realmente vacío
+            // Esto significa que no se ha hecho ningún bloqueo para este evento aún
+            // o que los bloqueos anteriores ya expiraron
+            LOG.info("Redis sigue vacío para evento {} después de intentar sincronizar. " +
+                    "Esto es normal si no se han hecho bloqueos recientes o si todos los bloqueos expiraron.", eventoId);
+            
+            return false;
+        } catch (Exception e) {
+            LOG.error("Error al intentar sincronizar Redis para evento {}: {}", eventoId, e.getMessage(), e);
+            return false;
         }
     }
 

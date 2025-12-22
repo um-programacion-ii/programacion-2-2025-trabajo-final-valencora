@@ -1,9 +1,6 @@
 package com.um.eventosproxy.kafka;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.um.eventosproxy.dto.EventoChangeDTO;
-import com.um.eventosproxy.dto.NotificacionEventoDTO;
-import com.um.eventosproxy.service.BackendNotificationService;
+import com.um.eventosproxy.service.BackendSyncService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -18,15 +15,10 @@ public class EventoKafkaConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EventoKafkaConsumer.class);
 
-    private final BackendNotificationService backendNotificationService;
-    private final ObjectMapper objectMapper;
+    private final BackendSyncService backendSyncService;
 
-    public EventoKafkaConsumer(
-        BackendNotificationService backendNotificationService,
-        ObjectMapper objectMapper
-    ) {
-        this.backendNotificationService = backendNotificationService;
-        this.objectMapper = objectMapper;
+    public EventoKafkaConsumer(BackendSyncService backendSyncService) {
+        this.backendSyncService = backendSyncService;
     }
 
     @KafkaListener(topics = "${application.kafka.topic.eventos}", groupId = "${spring.kafka.consumer.group-id}")
@@ -37,72 +29,24 @@ public class EventoKafkaConsumer {
         @Header(KafkaHeaders.OFFSET) long offset,
         Acknowledgment acknowledgment
     ) {
-        LOG.info("Mensaje recibido de Kafka - Topic: {}, Partition: {}, Offset: {}", topic, partition, offset);
-        LOG.debug("Contenido del mensaje: {}", message);
+        LOG.info("📩 Mensaje Kafka recibido. topic={}, partition={}, offset={}, key={}, value={}",
+            topic, partition, offset, "N/A", message);
 
         try {
-            // Deserializar mensaje
-            EventoChangeDTO eventoChange = objectMapper.readValue(message, EventoChangeDTO.class);
+            // Sincronizar eventos con el backend 
+            // Cuando se recibe un mensaje de Kafka, se hace un "sync completo" de eventos en el backend
+            backendSyncService.syncEventsWithBackend();
 
-            if (eventoChange == null || eventoChange.getEventoId() == null) {
-                LOG.warn("Mensaje de Kafka inválido o sin eventoId, se omite");
-                acknowledgment.acknowledge();
-                return;
-            }
-
-            LOG.info("Procesando cambio de evento: eventoId={}, tipoCambio={}", 
-                eventoChange.getEventoId(), eventoChange.getTipoCambio());
-
-            // Convertir a DTO de notificación
-            NotificacionEventoDTO notificacion = convertirANotificacion(eventoChange);
-
-            // Notificar al backend de forma asíncrona
-            backendNotificationService.notificarCambioEvento(notificacion)
-                .thenRun(() -> {
-                    LOG.debug("Notificación procesada exitosamente para eventoId: {}", eventoChange.getEventoId());
-                    acknowledgment.acknowledge();
-                })
-                .exceptionally(ex -> {
-                    LOG.error("Error al procesar notificación para eventoId: {}", eventoChange.getEventoId(), ex);
-                    // Aún así confirmamos el mensaje para evitar reprocesamiento infinito
-                    acknowledgment.acknowledge();
-                    return null;
-                });
+            // Confirmar mensaje procesado
+            acknowledgment.acknowledge();
+            LOG.debug("✅ Mensaje Kafka procesado y sincronización iniciada exitosamente");
 
         } catch (Exception e) {
-            LOG.error("Error al procesar mensaje de Kafka", e);
+            LOG.error("❌ Error al procesar mensaje de Kafka", e);
             // Confirmar mensaje para evitar bloqueo del consumer
+            // En caso de error, aún confirmamos para no bloquear el procesamiento de otros mensajes
             acknowledgment.acknowledge();
         }
-    }
-
-    private NotificacionEventoDTO convertirANotificacion(EventoChangeDTO eventoChange) {
-        NotificacionEventoDTO notificacion = new NotificacionEventoDTO();
-        notificacion.setEventoIdCatedra(eventoChange.getEventoId());
-
-        // Mapear tipo de cambio
-        switch (eventoChange.getTipoCambio()) {
-            case CREATE:
-                notificacion.setTipoCambio(NotificacionEventoDTO.TipoCambio.CREATE);
-                break;
-            case UPDATE:
-                notificacion.setTipoCambio(NotificacionEventoDTO.TipoCambio.UPDATE);
-                break;
-            case DELETE:
-                notificacion.setTipoCambio(NotificacionEventoDTO.TipoCambio.DELETE);
-                break;
-            case CANCEL:
-                notificacion.setTipoCambio(NotificacionEventoDTO.TipoCambio.CANCEL);
-                break;
-            default:
-                LOG.warn("Tipo de cambio desconocido: {}, usando UPDATE por defecto", eventoChange.getTipoCambio());
-                notificacion.setTipoCambio(NotificacionEventoDTO.TipoCambio.UPDATE);
-        }
-
-        // Incluir datos del evento si están disponibles
-        notificacion.setEvento(eventoChange.getEvento());
-
-        return notificacion;
     }
 }
 

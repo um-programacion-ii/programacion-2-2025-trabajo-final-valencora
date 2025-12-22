@@ -22,4 +22,3 @@ public class MapaAsientosDTO implements Serializable {
     @JsonProperty("matriz")
     private List<String> matriz = new ArrayList<>();
 }
-

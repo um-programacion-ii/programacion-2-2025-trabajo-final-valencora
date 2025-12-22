@@ -34,13 +34,23 @@ public class AsientosResource {
 
         MapaAsientosDTO mapa = redisAsientosService.obtenerMapaAsientos(eventoId);
         
-        // Solo devolver la matriz, no incluir los asientos individuales
-        MapaAsientosDTO respuesta = new MapaAsientosDTO();
-        respuesta.setEventoId(mapa.getEventoId());
-        respuesta.setMatriz(mapa.getMatriz() != null ? mapa.getMatriz() : new java.util.ArrayList<>());
-        respuesta.setAsientos(null); // null para que no se incluya en el JSON
+        // Devolver el mapa completo con todos los asientos y sus estados
+        LOG.info("Devolviendo mapa de asientos: {} asientos totales para eventoId: {}", 
+            mapa.getAsientos() != null ? mapa.getAsientos().size() : 0, eventoId);
+        if (mapa.getAsientos() != null && !mapa.getAsientos().isEmpty()) {
+            long bloqueados = mapa.getAsientos().stream()
+                .filter(a -> a.getEstado() == com.um.eventosproxy.dto.AsientoDTO.EstadoAsiento.BLOQUEADO)
+                .count();
+            long ocupados = mapa.getAsientos().stream()
+                .filter(a -> a.getEstado() == com.um.eventosproxy.dto.AsientoDTO.EstadoAsiento.OCUPADO)
+                .count();
+            long libres = mapa.getAsientos().stream()
+                .filter(a -> a.getEstado() == com.um.eventosproxy.dto.AsientoDTO.EstadoAsiento.LIBRE)
+                .count();
+            LOG.info("Estados de asientos: {} bloqueados, {} ocupados, {} libres", bloqueados, ocupados, libres);
+        }
         
-        return ResponseEntity.ok(respuesta);
+        return ResponseEntity.ok(mapa);
     }
 
     @PostMapping("/bloquear")
