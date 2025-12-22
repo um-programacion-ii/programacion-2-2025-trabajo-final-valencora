@@ -45,8 +45,8 @@ public class EventoMapper {
         evento.setImagenUrl(dto.getImagenUrl());
         evento.setPrecio(dto.getPrecio());
         evento.setCancelado(dto.getCancelado() != null ? dto.getCancelado() : false);
-        evento.setFilaAsiento(dto.getFilaAsiento());
-        evento.setColumnAsiento(dto.getColumnAsiento());
+        evento.setFilaAsiento(dto.getFilaAsientos());
+        evento.setColumnAsiento(dto.getColumnAsientos());
 
         // Mapear tipo de evento
         if (dto.getTipo() != null && dto.getTipo().getNombre() != null) {
@@ -89,8 +89,8 @@ public class EventoMapper {
         evento.setImagenUrl(dto.getImagenUrl());
         evento.setPrecio(dto.getPrecio());
         evento.setCancelado(dto.getCancelado() != null ? dto.getCancelado() : false);
-        evento.setFilaAsiento(dto.getFilaAsiento());
-        evento.setColumnAsiento(dto.getColumnAsiento());
+        evento.setFilaAsiento(dto.getFilaAsientos());
+        evento.setColumnAsiento(dto.getColumnAsientos());
 
         // Actualizar tipo de evento
         if (dto.getTipo() != null && dto.getTipo().getNombre() != null) {
@@ -185,4 +185,3 @@ public class EventoMapper {
         return dto;
     }
 }
-

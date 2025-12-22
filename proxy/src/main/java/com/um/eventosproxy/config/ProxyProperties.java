@@ -23,6 +23,7 @@ public class ProxyProperties {
 
     public static class Backend {
         private String baseUrl = "http://localhost:8080";
+        private String syncEventsPath = "/api/admin/eventos/sincronizar";
         private final Jwt jwt = new Jwt();
 
         public String getBaseUrl() {
@@ -31,6 +32,14 @@ public class ProxyProperties {
 
         public void setBaseUrl(String baseUrl) {
             this.baseUrl = baseUrl;
+        }
+
+        public String getSyncEventsPath() {
+            return syncEventsPath;
+        }
+
+        public void setSyncEventsPath(String syncEventsPath) {
+            this.syncEventsPath = syncEventsPath;
         }
 
         public Jwt getJwt() {

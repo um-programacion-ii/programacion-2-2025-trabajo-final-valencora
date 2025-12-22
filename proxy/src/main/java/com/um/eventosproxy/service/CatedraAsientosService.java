@@ -136,25 +136,11 @@ public class CatedraAsientosService {
                         responseDTO.getAsientosBloqueados() != null ? responseDTO.getAsientosBloqueados().size() : 0,
                         responseDTO.getAsientosNoDisponibles() != null ? responseDTO.getAsientosNoDisponibles().size() : 0);
 
-                    // Actualizar nuestro Redis local para que el proxy pueda devolver los asientos bloqueados
-                    if (Boolean.TRUE.equals(responseDTO.obtenerExitoso()) 
-                        && responseDTO.getAsientosBloqueados() != null 
-                        && !responseDTO.getAsientosBloqueados().isEmpty()) {
-                        try {
-                            LOG.info("Actualizando Redis con {} asientos bloqueados para evento {}", 
-                                responseDTO.getAsientosBloqueados().size(), request.getEventoId());
-                            actualizarBloqueosEnRedis(request.getEventoId(), responseDTO);
-                            LOG.info("Redis actualizado exitosamente para evento {}", request.getEventoId());
-                        } catch (Exception e) {
-                            LOG.error("Error al actualizar Redis con los bloqueos del evento {}: {}", 
-                                request.getEventoId(), e.getMessage(), e);
-                            // No fallar el bloqueo si Redis falla, solo loguear el error
-                        }
-                    } else {
-                        LOG.info("No se actualiza Redis: bloqueo exitoso={}, asientos bloqueados={}", 
-                            responseDTO.obtenerExitoso(),
-                            responseDTO.getAsientosBloqueados() != null ? responseDTO.getAsientosBloqueados().size() : 0);
-                    }
+                    // NO actualizamos Redis desde el proxy
+                    // La cátedra es la que escribe directamente en Redis cuando procesa el bloqueo
+                   
+                    LOG.info("Bloqueo procesado por la cátedra. La cátedra actualiza Redis directamente. " +
+                            "El proxy solo lee desde Redis, no escribe.");
                     return responseDTO;
                 } catch (Exception parseException) {
                     LOG.error("Error al parsear respuesta de bloqueo de asientos: {}", rawResponse.getBody(), parseException);
@@ -198,18 +184,30 @@ public class CatedraAsientosService {
         final String key = "evento_" + eventoId;
         LOG.info("Actualizando Redis para los bloqueos de evento {} en key '{}'", eventoId, key);
 
-        // Leer estado actual
+        // Leer estado actual de Redis (puede tener bloqueos de otros usuarios o bloqueos previos)
         String jsonActual = redisTemplate.opsForValue().get(key);
         Map<String, Object> estadoActual;
         if (jsonActual != null && !jsonActual.isBlank()) {
-            estadoActual = objectMapper.readValue(
-                jsonActual,
-                new TypeReference<Map<String, Object>>() {}
-            );
+            try {
+                estadoActual = objectMapper.readValue(
+                    jsonActual,
+                    new TypeReference<Map<String, Object>>() {}
+                );
+                LOG.info("Redis ya tenía datos para evento {}: {} asientos existentes", 
+                    eventoId, 
+                    ((List<?>) estadoActual.getOrDefault("asientos", new ArrayList<>())).size());
+            } catch (Exception e) {
+                LOG.warn("Error al parsear datos existentes en Redis para evento {}, creando nuevo estado: {}", 
+                    eventoId, e.getMessage());
+                estadoActual = new java.util.HashMap<>();
+                estadoActual.put("eventoId", eventoId);
+                estadoActual.put("asientos", new java.util.ArrayList<Map<String, Object>>());
+            }
         } else {
             estadoActual = new java.util.HashMap<>();
             estadoActual.put("eventoId", eventoId);
             estadoActual.put("asientos", new java.util.ArrayList<Map<String, Object>>());
+            LOG.info("Redis estaba vacío para evento {}, creando nuevo estado", eventoId);
         }
 
         @SuppressWarnings("unchecked")

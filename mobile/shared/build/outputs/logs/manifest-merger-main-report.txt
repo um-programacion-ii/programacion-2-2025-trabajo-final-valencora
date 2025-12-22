@@ -1,0 +1,12 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml:1:1-51
+INJECTED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml:1:1-51
+	package
+		ADDED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml:1:11-48
+		INJECTED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml
+uses-sdk
+INJECTED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /home/valencora/Escritorio/programacion-2-2025-trabajo-final-valencora/mobile/shared/src/androidMain/AndroidManifest.xml

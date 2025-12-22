@@ -89,13 +89,13 @@ public class Evento extends AbstractAuditingEntity<Long> implements Serializable
     /**
      * Número de filas de asientos del evento
      */
-    @Column(name = "fila_asiento")
+    @Column(name = "fila_asientos")
     private Integer filaAsiento;
 
     /**
      * Número de columnas de asientos del evento
      */
-    @Column(name = "column_asiento")
+    @Column(name = "column_asientos")
     private Integer columnAsiento;
 
     public Long getId() {
@@ -256,4 +256,3 @@ public class Evento extends AbstractAuditingEntity<Long> implements Serializable
             '}';
     }
 }
-

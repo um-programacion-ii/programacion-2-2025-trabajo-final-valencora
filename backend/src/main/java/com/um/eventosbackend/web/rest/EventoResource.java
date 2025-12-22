@@ -50,7 +50,7 @@ public class EventoResource {
     }
 
     /**
-     * {@code GET /api/eventos/catedra/:eventoIdCatedra/dimensiones} : obtiene las dimensiones (filas y columnas) de un evento por su ID de cátedra.
+     * {@code GET /api/eventos/catedra/:eventoIdCatedra/dimensiones} : obtiene las dimensiones (filas y columnas) de un evento por su ID de cÃ¡tedra.
      */
     @GetMapping("/catedra/{eventoIdCatedra}/dimensiones")
     @PreAuthorize("permitAll()")
@@ -61,4 +61,3 @@ public class EventoResource {
             .orElse(ResponseEntity.notFound().build());
     }
 }
-

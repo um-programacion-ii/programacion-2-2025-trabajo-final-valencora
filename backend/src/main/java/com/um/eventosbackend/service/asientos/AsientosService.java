@@ -89,8 +89,28 @@ public class AsientosService {
             estadoSeleccion.getAsientosSeleccionados().stream()
                 .map(a -> {
                     BloqueoAsientosRequestDTO.AsientoBloqueoDTO dto = new BloqueoAsientosRequestDTO.AsientoBloqueoDTO();
-                    dto.setFila(a.getFila());
-                    dto.setNumero(a.getNumero());
+                    // Convertir fila de String a Integer (A=1, B=2, C=3, etc.)
+                    String filaStr = a.getFila();
+                    Integer filaInt = null;
+                    if (filaStr != null && !filaStr.isEmpty()) {
+                        char firstChar = filaStr.toUpperCase().charAt(0);
+                        if (firstChar >= 'A' && firstChar <= 'Z') {
+                            filaInt = firstChar - 'A' + 1; // A=1, B=2, C=3, etc.
+                        } else {
+                            // Intentar parsear como número
+                            try {
+                                filaInt = Integer.parseInt(filaStr);
+                            } catch (NumberFormatException e) {
+                                LOG.warn("No se pudo convertir fila '{}' a Integer, usando 1 por defecto", filaStr);
+                                filaInt = 1;
+                            }
+                        }
+                    } else {
+                        filaInt = 1; // Valor por defecto
+                    }
+                    dto.setFila(filaInt);
+                    // El proxy espera "columna", que corresponde al "numero" del asiento
+                    dto.setColumna(a.getNumero());
                     return dto;
                 })
                 .collect(Collectors.toList())

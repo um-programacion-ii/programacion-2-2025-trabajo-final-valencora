@@ -36,25 +36,25 @@ public class BloqueoAsientosRequestDTO implements Serializable {
         private static final long serialVersionUID = 1L;
 
         @JsonProperty("fila")
-        private String fila;
+        private Integer fila;
 
-        @JsonProperty("numero")
-        private Integer numero;
+        @JsonProperty("columna")
+        private Integer columna;
 
-        public String getFila() {
+        public Integer getFila() {
             return fila;
         }
 
-        public void setFila(String fila) {
+        public void setFila(Integer fila) {
             this.fila = fila;
         }
 
-        public Integer getNumero() {
-            return numero;
+        public Integer getColumna() {
+            return columna;
         }
 
-        public void setNumero(Integer numero) {
-            this.numero = numero;
+        public void setColumna(Integer columna) {
+            this.columna = columna;
         }
     }
 }
