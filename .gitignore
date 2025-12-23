@@ -32,7 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 
-
 ### Android/Mobile Cache ###
 mobile/.gradle/
 mobile/app/build/
@@ -45,3 +44,6 @@ mobile/.cxx/
 mobile/.externalNativeBuild/
 mobile/app/.cxx/
 mobile/app/.externalNativeBuild/
+mobile/**/build/
+mobile/**/.gradle/
+

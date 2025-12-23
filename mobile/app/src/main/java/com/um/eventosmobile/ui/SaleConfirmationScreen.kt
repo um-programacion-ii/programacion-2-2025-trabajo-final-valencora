@@ -9,14 +9,17 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.MobileApi
-import com.um.eventosmobile.shared.SaleRequestDto
 import com.um.eventosmobile.shared.SaleResponseDto
-import com.um.eventosmobile.shared.SeatSaleDto
-import kotlinx.coroutines.launch
+import com.um.eventosmobile.ui.state.SaleConfirmationEffect
+import com.um.eventosmobile.ui.state.SaleConfirmationViewModel
+import com.um.eventosmobile.ui.state.SaleConfirmationViewModelFactory
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,39 +28,18 @@ fun SaleConfirmationScreen(
     eventId: Long,
     seatsWithPeople: List<Triple<String, Int, Pair<String, String>>>,
     onBack: () -> Unit,
-    onFinish: (SaleResponseDto) -> Unit
+    onFinish: (SaleResponseDto) -> Unit,
+    viewModel: SaleConfirmationViewModel = viewModel(
+        factory = SaleConfirmationViewModelFactory(api, eventId, seatsWithPeople)
+    )
 ) {
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
 
-    fun processSale() {
-        scope.launch {
-            try {
-                isLoading = true
-                error = null
-                
-                val saleRequest = SaleRequestDto(
-                    eventoId = eventId,
-                    asientos = seatsWithPeople.map { (fila, numero, names) ->
-                        SeatSaleDto(
-                            fila = fila,
-                            numero = numero,
-                            nombrePersona = names.first,
-                            apellidoPersona = names.second
-                        )
-                    }
-                )
-                
-                val response = api.processSale(saleRequest)
-                isLoading = false
-                onFinish(response)
-            } catch (e: Exception) {
-                isLoading = false
-                error = when {
-                    e.message?.contains("401") == true -> "Sesión expirada"
-                    e.message?.contains("400") == true -> "Datos inválidos"
-                    else -> e.message ?: "Error al procesar la venta"
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is SaleConfirmationEffect.SaleCompleted -> {
+                    onFinish(effect.response)
                 }
             }
         }
@@ -83,15 +65,16 @@ fun SaleConfirmationScreen(
         ) {
             Text(
                 text = "Resumen de la compra",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(16.dp)
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(20.dp)
             )
 
-            error?.let {
+            uiState.error?.let {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 20.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     )
@@ -99,10 +82,11 @@ fun SaleConfirmationScreen(
                     Text(
                         text = it,
                         color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp)
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(18.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             // Lista de asientos
@@ -110,42 +94,56 @@ fun SaleConfirmationScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    shape = MaterialTheme.shapes.large,
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(20.dp)
                     ) {
                         Text(
                             text = "Fila $fila, Asiento $numero",
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "${names.first} ${names.second}",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { processSale() },
+                onClick = { viewModel.processSale() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 20.dp)
                     .height(56.dp),
-                enabled = !isLoading
+                enabled = !uiState.isLoading,
+                shape = MaterialTheme.shapes.large,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                )
             ) {
-                if (isLoading) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Confirmar y Comprar")
+                    Text(
+                        "Confirmar y Comprar",
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
 
@@ -165,7 +163,7 @@ fun SaleResultScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -176,7 +174,7 @@ fun SaleResultScreen(
                     Icons.Default.Error
                 },
                 contentDescription = null,
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(100.dp),
                 tint = if (success) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -184,14 +182,15 @@ fun SaleResultScreen(
                 }
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
                 text = if (success) "Compra exitosa" else "Error en la compra",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Text(
                 text = message,
@@ -199,13 +198,23 @@ fun SaleResultScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             
             Button(
                 onClick = onFinish,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                )
             ) {
-                Text("Finalizar")
+                Text(
+                    "Finalizar",
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
