@@ -5,55 +5,34 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.EventSummary
 import com.um.eventosmobile.shared.MobileApi
-import kotlinx.coroutines.launch
+import com.um.eventosmobile.ui.state.EventListViewModel
+import com.um.eventosmobile.ui.state.EventListViewModelFactory
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventListScreen(
     api: MobileApi,
     onEventClick: (Long) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    viewModel: EventListViewModel = viewModel(factory = EventListViewModelFactory(api))
 ) {
-    var events by remember { mutableStateOf<List<EventSummary>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var isRefreshing by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-
-    fun loadEvents() {
-        scope.launch {
-            try {
-                isLoading = true
-                error = null
-                events = api.getEvents()
-                isLoading = false
-            } catch (e: Exception) {
-                isLoading = false
-                error = when {
-                    e.message?.contains("401") == true -> "Sesión expirada. Por favor inicie sesión nuevamente."
-                    e.message?.contains("403") == true -> "No tiene permisos para ver eventos."
-                    e.message?.contains("Network") == true -> "Error de conexión. Verifique su internet."
-                    else -> e.message ?: "Error al cargar eventos"
-                }
-            }
-        }
-    }
-
-    // Cargar eventos al iniciar
-    LaunchedEffect(Unit) {
-        loadEvents()
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -73,13 +52,13 @@ fun EventListScreen(
                 .padding(padding)
         ) {
             when {
-                isLoading && events.isEmpty() -> {
+                uiState.isLoading && uiState.events.isEmpty() -> {
                     // Carga inicial
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
-                error != null && events.isEmpty() -> {
+                uiState.error != null && uiState.events.isEmpty() -> {
                     // Error sin datos
                     Column(
                         modifier = Modifier
@@ -89,17 +68,17 @@ fun EventListScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = error ?: "Error desconocido",
+                            text = uiState.error ?: "Error desconocido",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { loadEvents() }) {
+                        Button(onClick = { viewModel.refresh() }) {
                             Text("Reintentar")
                         }
                     }
                 }
-                events.isEmpty() -> {
+                uiState.events.isEmpty() -> {
                     // Lista vacía
                     Column(
                         modifier = Modifier
@@ -113,7 +92,7 @@ fun EventListScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { loadEvents() }) {
+                        Button(onClick = { viewModel.refresh() }) {
                             Text("Actualizar")
                         }
                     }
@@ -122,11 +101,11 @@ fun EventListScreen(
                     // Lista con eventos
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         item {
-                            if (error != null) {
+                            if (uiState.error != null) {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(
@@ -141,11 +120,11 @@ fun EventListScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = error ?: "Error",
+                                            text = uiState.error ?: "Error",
                                             color = MaterialTheme.colorScheme.onErrorContainer,
                                             modifier = Modifier.weight(1f)
                                         )
-                                        TextButton(onClick = { loadEvents() }) {
+                                        TextButton(onClick = { viewModel.refresh() }) {
                                             Text("Reintentar")
                                         }
                                     }
@@ -154,7 +133,7 @@ fun EventListScreen(
                             }
                         }
                         
-                        items(events) { event ->
+                        items(uiState.events) { event ->
                             EventCard(
                                 event = event,
                                 onClick = { onEventClick(event.id) }
@@ -164,14 +143,6 @@ fun EventListScreen(
                 }
             }
 
-            // Pull-to-refresh
-            if (isRefreshing) {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                )
-            }
         }
     }
 }
@@ -183,76 +154,126 @@ fun EventCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
+        ),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             Text(
                 text = event.titulo,
                 style = MaterialTheme.typography.titleLarge,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             event.resumen?.let { resumen ->
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = resumen,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
                 )
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Fecha
-                event.fecha.let { fecha ->
-                    val localDateTime = fecha.toLocalDateTime(TimeZone.currentSystemDefault())
+            // Fecha y hora con iconos
+            event.fecha.let { fecha ->
+                val localDateTime = fecha.toLocalDateTime(TimeZone.currentSystemDefault())
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "${localDateTime.date.dayOfMonth}/${localDateTime.date.monthNumber}/${localDateTime.date.year} " +
-                                "${localDateTime.time.hour.toString().padStart(2, '0')}:${localDateTime.time.minute.toString().padStart(2, '0')}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        text = "${localDateTime.date.dayOfMonth}/${localDateTime.date.monthNumber}/${localDateTime.date.year}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(
+                        imageVector = Icons.Default.AccessTime,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${localDateTime.time.hour.toString().padStart(2, '0')}:${localDateTime.time.minute.toString().padStart(2, '0')}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                
-                // Precio
-                event.precio?.let { precio ->
-                    Text(
-                        text = "$${String.format("%.2f", precio)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+            }
+            
+            // Precio destacado
+            event.precio?.let { precio ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.small,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Event,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$${String.format("%.2f", precio)}",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(10.dp))
             }
             
             // Dirección
             event.direccion?.let { direccion ->
-                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = direccion,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis

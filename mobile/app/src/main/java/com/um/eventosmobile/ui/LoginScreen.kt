@@ -39,8 +39,9 @@ fun LoginScreen(
         ) {
             Text(
                 text = "Eventos Mobile",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 32.dp)
+                style = MaterialTheme.typography.displaySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 48.dp)
             )
 
             OutlinedTextField(
@@ -52,9 +53,10 @@ fun LoginScreen(
                 label = { Text("Usuario") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 20.dp),
                 enabled = !loading,
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
@@ -66,17 +68,19 @@ fun LoginScreen(
                 label = { Text("Contraseña") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 28.dp),
                 visualTransformation = PasswordVisualTransformation(),
                 enabled = !loading,
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             error?.let {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                        .padding(bottom = 20.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     )
@@ -84,6 +88,7 @@ fun LoginScreen(
                     Text(
                         text = it,
                         color = MaterialTheme.colorScheme.onErrorContainer,
+                        style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
@@ -117,7 +122,12 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !loading && username.isNotBlank() && password.isNotBlank()
+                enabled = !loading && username.isNotBlank() && password.isNotBlank(),
+                shape = MaterialTheme.shapes.large,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp,
+                    pressedElevation = 8.dp
+                )
             ) {
                 if (loading) {
                     CircularProgressIndicator(
@@ -125,7 +135,10 @@ fun LoginScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Ingresar")
+                    Text(
+                        "Ingresar",
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
         }

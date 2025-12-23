@@ -140,6 +140,8 @@ class MainActivity : ComponentActivity() {
                                     seats = screen.seats,
                                     expiresAt = screen.expiresAt,
                                     onBack = { 
+                                        // Incrementar refreshKey para forzar recreación del ViewModel y limpiar selección local
+                                        seatMapRefreshKey++
                                         currentScreen = Screen.SeatSelection(screen.eventId, seatMapRefreshKey)
                                     },
                                     onExpired = {

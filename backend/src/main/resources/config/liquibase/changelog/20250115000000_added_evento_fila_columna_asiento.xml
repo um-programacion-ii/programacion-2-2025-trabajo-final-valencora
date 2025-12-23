@@ -5,46 +5,56 @@
     xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="20250115000000-1" author="assistant">
-        <comment>Agregar columna fila_asiento a la tabla evento si no existe</comment>
         <preConditions onFail="MARK_RAN">
             <not>
                 <columnExists tableName="evento" columnName="fila_asiento"/>
             </not>
         </preConditions>
+        <comment>Agregar columna fila_asiento a la tabla evento si no existe</comment>
         <addColumn tableName="evento">
-            <column name="fila_asiento" type="integer" remarks="Número de filas de asientos del evento">
+            <column name="fila_asientos" type="integer" remarks="Número de filas de asientos del evento">
                 <constraints nullable="true"/>
             </column>
         </addColumn>
     </changeSet>
 
     <changeSet id="20250115000000-2" author="assistant">
-        <comment>Renombrar columna columna_asiento a column_asiento si existe la columna antigua</comment>
         <preConditions onFail="MARK_RAN">
             <and>
                 <columnExists tableName="evento" columnName="columna_asiento"/>
                 <not>
-                    <columnExists tableName="evento" columnName="column_asiento"/>
+                    <columnExists tableName="evento" columnName="column_asientos"/>
                 </not>
             </and>
         </preConditions>
-        <renameColumn tableName="evento" oldColumnName="columna_asiento" newColumnName="column_asiento" columnDataType="integer"/>
+        <comment>Renombrar columna columna_asiento a column_asientos si existe la columna antigua</comment>
+        <renameColumn tableName="evento" oldColumnName="columna_asiento" newColumnName="column_asientos" columnDataType="integer"/>
     </changeSet>
 
     <changeSet id="20250115000000-3" author="assistant">
-        <comment>Agregar columna column_asiento si no existe ninguna de las dos versiones</comment>
         <preConditions onFail="MARK_RAN">
             <and>
+                <columnExists tableName="evento" columnName="column_asiento"/>
                 <not>
-                    <columnExists tableName="evento" columnName="column_asiento"/>
-                </not>
-                <not>
-                    <columnExists tableName="evento" columnName="columna_asiento"/>
+                    <columnExists tableName="evento" columnName="column_asientos"/>
                 </not>
             </and>
         </preConditions>
+        <comment>Renombrar columna column_asiento a column_asientos si existe la versión singular</comment>
+        <renameColumn tableName="evento" oldColumnName="column_asiento" newColumnName="column_asientos" columnDataType="integer"/>
+    </changeSet>
+
+    <changeSet id="20250115000000-4" author="assistant">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <not>
+                    <columnExists tableName="evento" columnName="column_asientos"/>
+                </not>
+            </and>
+        </preConditions>
+        <comment>Agregar columna column_asientos si no existe ninguna de las versiones</comment>
         <addColumn tableName="evento">
-            <column name="column_asiento" type="integer" remarks="Número de columnas de asientos del evento">
+            <column name="column_asientos" type="integer" remarks="Número de columnas de asientos del evento">
                 <constraints nullable="true"/>
             </column>
         </addColumn>
