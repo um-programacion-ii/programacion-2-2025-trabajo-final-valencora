@@ -7,15 +7,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.MobileApi
-import com.um.eventosmobile.ui.state.NamesEffect
-import com.um.eventosmobile.ui.state.NamesViewModel
-import com.um.eventosmobile.ui.state.NamesViewModelFactory
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,24 +21,67 @@ fun NamesScreen(
     expiresAt: String?,
     onBack: () -> Unit,
     onExpired: () -> Unit,
-    onConfirm: (List<Triple<String, Int, Pair<String, String>>>) -> Unit,
-    viewModel: NamesViewModel = viewModel(
-        factory = NamesViewModelFactory(eventId, seats, expiresAt)
-    )
+    onConfirm: (List<Triple<String, Int, Pair<String, String>>>) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    // personNames se reinicializa cada vez que cambian los seats
+    var personNames by remember(seats) {
+        mutableStateOf(
+            seats.associate { it to ("" to "") }.toMutableMap()
+        )
+    }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collectLatest { effect ->
-            when (effect) {
-                is NamesEffect.Expired -> {
-                    onExpired()
-                }
-                is NamesEffect.Confirm -> {
-                    onConfirm(effect.seatsWithPeople)
+    // Verificar expiración y mostrar contador
+    var remainingSeconds by remember(expiresAt) {
+        mutableStateOf<Long?>(
+            expiresAt?.let { isoRaw ->
+                try {
+                    // Normalizar formato de fecha (puede tener microsegundos)
+                    val iso = isoRaw.replace(Regex("\\.\\d+Z$"), "Z")
+                    val expiryInstant = kotlinx.datetime.Instant.parse(iso)
+                    val now = kotlinx.datetime.Clock.System.now()
+                    val diff = expiryInstant - now
+                    diff.inWholeSeconds.coerceAtLeast(0)
+                } catch (e: Exception) {
+                    null
                 }
             }
+        )
+    }
+
+    LaunchedEffect(expiresAt) {
+        val start = remainingSeconds ?: return@LaunchedEffect
+        if (start <= 0) {
+            onExpired()
+            return@LaunchedEffect
         }
+        var s = start
+        while (s > 0) {
+            kotlinx.coroutines.delay(1_000)
+            s--
+            remainingSeconds = s
+            if (s <= 0) {
+                onExpired()
+                break
+            }
+        }
+    }
+
+    fun validateAndContinue() {
+        val invalidSeats = personNames.filter { (_, names) ->
+            names.first.isBlank() || names.second.isBlank()
+        }
+        
+        if (invalidSeats.isNotEmpty()) {
+            error = "Debe completar nombre y apellido para todos los asientos"
+            return
+        }
+
+        val seatsWithPeople = personNames.map { (seat, names) ->
+            Triple(seat.first, seat.second, names)
+        }
+        onConfirm(seatsWithPeople)
     }
 
     Scaffold(
@@ -71,7 +109,7 @@ fun NamesScreen(
             )
 
             // Mostrar tiempo restante si está disponible
-            uiState.remainingSeconds?.let { seconds ->
+            remainingSeconds?.let { seconds ->
                 if (seconds > 0) {
                     Card(
                         modifier = Modifier
@@ -94,7 +132,7 @@ fun NamesScreen(
                 }
             }
 
-            uiState.error?.let {
+            error?.let {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -136,12 +174,15 @@ fun NamesScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         
                         val seatKey = fila to numero
-                        val currentNames = uiState.personNames[seatKey] ?: ("" to "")
+                        val currentNames = personNames[seatKey] ?: ("" to "")
                         
                         OutlinedTextField(
                             value = currentNames.first,
                             onValueChange = { nombre ->
-                                viewModel.updateName(seatKey, nombre)
+                                personNames = personNames.toMutableMap().apply {
+                                    put(seatKey, nombre to currentNames.second)
+                                }
+                                error = null
                             },
                             label = { Text("Nombre") },
                             modifier = Modifier.fillMaxWidth(),
@@ -154,7 +195,10 @@ fun NamesScreen(
                         OutlinedTextField(
                             value = currentNames.second,
                             onValueChange = { apellido ->
-                                viewModel.updateLastName(seatKey, apellido)
+                                personNames = personNames.toMutableMap().apply {
+                                    put(seatKey, currentNames.first to apellido)
+                                }
+                                error = null
                             },
                             label = { Text("Apellido") },
                             modifier = Modifier.fillMaxWidth(),
@@ -168,12 +212,12 @@ fun NamesScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { viewModel.validateAndContinue() },
+                onClick = { validateAndContinue() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(56.dp),
-                enabled = uiState.remainingSeconds == null || uiState.remainingSeconds!! > 0,
+                enabled = remainingSeconds == null || remainingSeconds!! > 0,
                 shape = MaterialTheme.shapes.large,
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 4.dp,
