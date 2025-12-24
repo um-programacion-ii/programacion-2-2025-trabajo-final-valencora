@@ -9,17 +9,14 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.MobileApi
+import com.um.eventosmobile.shared.SaleRequestDto
 import com.um.eventosmobile.shared.SaleResponseDto
-import com.um.eventosmobile.ui.state.SaleConfirmationEffect
-import com.um.eventosmobile.ui.state.SaleConfirmationViewModel
-import com.um.eventosmobile.ui.state.SaleConfirmationViewModelFactory
-import kotlinx.coroutines.flow.collectLatest
+import com.um.eventosmobile.shared.SeatSaleDto
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,18 +25,39 @@ fun SaleConfirmationScreen(
     eventId: Long,
     seatsWithPeople: List<Triple<String, Int, Pair<String, String>>>,
     onBack: () -> Unit,
-    onFinish: (SaleResponseDto) -> Unit,
-    viewModel: SaleConfirmationViewModel = viewModel(
-        factory = SaleConfirmationViewModelFactory(api, eventId, seatsWithPeople)
-    )
+    onFinish: (SaleResponseDto) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    var isLoading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collectLatest { effect ->
-            when (effect) {
-                is SaleConfirmationEffect.SaleCompleted -> {
-                    onFinish(effect.response)
+    fun processSale() {
+        scope.launch {
+            try {
+                isLoading = true
+                error = null
+                
+                val saleRequest = SaleRequestDto(
+                    eventoId = eventId,
+                    asientos = seatsWithPeople.map { (fila, numero, names) ->
+                        SeatSaleDto(
+                            fila = fila,
+                            numero = numero,
+                            nombrePersona = names.first,
+                            apellidoPersona = names.second
+                        )
+                    }
+                )
+                
+                val response = api.processSale(saleRequest)
+                isLoading = false
+                onFinish(response)
+            } catch (e: Exception) {
+                isLoading = false
+                error = when {
+                    e.message?.contains("401") == true -> "Sesión expirada"
+                    e.message?.contains("400") == true -> "Datos inválidos"
+                    else -> e.message ?: "Error al procesar la venta"
                 }
             }
         }
@@ -69,7 +87,7 @@ fun SaleConfirmationScreen(
                 modifier = Modifier.padding(20.dp)
             )
 
-            uiState.error?.let {
+            error?.let {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -122,19 +140,19 @@ fun SaleConfirmationScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = { viewModel.processSale() },
+                onClick = { processSale() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
                     .height(56.dp),
-                enabled = !uiState.isLoading,
+                enabled = !isLoading,
                 shape = MaterialTheme.shapes.large,
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 4.dp,
                     pressedElevation = 8.dp
                 )
             ) {
-                if (uiState.isLoading) {
+                if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary

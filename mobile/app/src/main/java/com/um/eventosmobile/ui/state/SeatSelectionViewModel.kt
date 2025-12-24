@@ -22,7 +22,8 @@ data class SeatSelectionUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isBlocking: Boolean = false,
-    val selectedSeats: Set<Pair<String, Int>> = emptySet()
+    val selectedSeats: Set<Pair<String, Int>> = emptySet(),
+    val expiresAt: String? = null
 )
 
 sealed class SeatSelectionEffect {
@@ -59,11 +60,26 @@ class SeatSelectionViewModel(
 
                 val completeMap = buildCompleteSeatMap(map, event.filaAsientos, event.columnAsientos)
 
+                // Verificar si hay una selección activa para este evento
+                val currentSelection = try {
+                    api.getCurrentSelection(eventId)
+                } catch (e: Exception) {
+                    null
+                }
+                
+                // Si hay una selección activa, restaurarla
+                val activeSeats = currentSelection?.asientos?.mapNotNull { seat ->
+                    seat.numero?.let { seat.fila to it }
+                }?.toSet() ?: emptySet()
+                val expiresAt = currentSelection?.expiracion?.toString()
+
                 _uiState.emit(
                     _uiState.value.copy(
                         seatMap = completeMap,
                         eventDetail = event,
                         isLoading = false,
+                        selectedSeats = activeSeats,
+                        expiresAt = expiresAt,
                         error = if (completeMap.asientos.isEmpty()) {
                             "No hay asientos disponibles para este evento"
                         } else null
@@ -133,7 +149,12 @@ class SeatSelectionViewModel(
                     val selection = api.getCurrentSelection(eventId)
                     val expiresAt = selection?.expiracion?.toString()
 
-                    _uiState.emit(_uiState.value.copy(isBlocking = false))
+                    _uiState.emit(_uiState.value.copy(
+                        isBlocking = false,
+                        error = null,
+                        selectedSeats = selectedSeats,
+                        expiresAt = expiresAt
+                    ))
                     _effects.emit(
                         SeatSelectionEffect.ContinueSelection(
                             eventId = eventId,

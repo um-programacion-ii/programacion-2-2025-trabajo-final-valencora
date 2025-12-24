@@ -40,7 +40,7 @@ fun SeatSelectionScreen(
     onBack: () -> Unit,
     onContinue: (Long, List<Pair<String, Int>>, String?) -> Unit,
     viewModel: SeatSelectionViewModel = viewModel(
-        key = "seat-$eventId-$refreshKey",
+        key = "seat-$eventId",
         factory = SeatSelectionViewModelFactory(api, eventId, refreshKey)
     )
 ) {
