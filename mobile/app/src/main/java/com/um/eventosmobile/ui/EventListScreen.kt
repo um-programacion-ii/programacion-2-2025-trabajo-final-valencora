@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.EventSummary
 import com.um.eventosmobile.shared.MobileApi
-import com.um.eventosmobile.ui.state.EventListViewModel
-import com.um.eventosmobile.ui.state.EventListViewModelFactory
+import com.um.eventosmobile.viewmodel.EventListViewModel
+import com.um.eventosmobile.viewmodel.EventListViewModelFactory
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 

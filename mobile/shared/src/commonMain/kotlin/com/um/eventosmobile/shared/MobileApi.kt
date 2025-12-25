@@ -12,21 +12,14 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 
 /**
- * Cliente API para comunicación con el backend y el proxy.
+ * Cliente API para comunicación con el backend.
  * Agrega automáticamente el token JWT a todas las peticiones.
  * 
- * Endpoints que van al PROXY:
- * - Obtener mapa de asientos
- * - Confirmar venta
- * 
- * Endpoints que van al BACKEND:
- * - Bloquear asientos (el backend obtiene los asientos de la sesión y los envía al proxy)
- * 
- * El resto de endpoints van al BACKEND.
+ * Todas las peticiones van al BACKEND, que actúa como orquestador
+ * y se comunica internamente con el proxy cuando es necesario.
  */
 class MobileApi(
-    private val backendUrl: String,  // Backend: eventos, sesión, etc.
-    private val proxyUrl: String,     // Proxy: mapa de asientos, bloquear, ventas
+    private val backendUrl: String,  // Backend: todas las operaciones
     private val tokenProvider: () -> String?
 ) {
     private val client = HttpClient {
@@ -113,10 +106,11 @@ class MobileApi(
     }
 
     /**
-     * GET /api/asientos/evento/{eventoId} - Obtiene el mapa de asientos de un evento (PROXY)
+     * GET /api/asientos/evento/{eventoId} - Obtiene el mapa de asientos de un evento (BACKEND)
+     * El backend obtiene el mapa desde el proxy internamente
      */
     suspend fun getSeatMap(eventoId: Long): SeatMap {
-        val dto: SeatMapDto = client.get("$proxyUrl/api/asientos/evento/$eventoId") {
+        val dto: SeatMapDto = client.get("$backendUrl/api/asientos/evento/$eventoId") {
             addAuthToken()
         }.body()
         
@@ -150,10 +144,11 @@ class MobileApi(
     }
 
     /**
-     * POST /api/ventas/confirmar - Confirma una venta (PROXY)
+     * POST /api/ventas - Procesa una venta (BACKEND)
+     * El backend valida, guarda localmente y confirma con el proxy/cátedra internamente
      */
     suspend fun processSale(request: SaleRequestDto): SaleResponseDto {
-        return client.post("$proxyUrl/api/ventas/confirmar") {
+        return client.post("$backendUrl/api/ventas") {
             addAuthToken()
             contentType(ContentType.Application.Json)
             setBody(request)

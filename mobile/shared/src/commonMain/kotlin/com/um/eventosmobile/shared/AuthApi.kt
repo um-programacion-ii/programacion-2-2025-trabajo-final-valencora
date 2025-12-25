@@ -2,6 +2,7 @@ package com.um.eventosmobile.shared
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -21,6 +22,10 @@ class AuthApi(private val backendUrl: String) {
                 }
             )
         }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 10000
+            requestTimeoutMillis = 30000
+        }
     }
 
     suspend fun login(username: String, password: String): String {
@@ -30,6 +35,16 @@ class AuthApi(private val backendUrl: String) {
         }.body()
 
         return resp.id_token
+    }
+
+    suspend fun register(login: String, email: String, password: String, langKey: String = "es") {
+        // El endpoint retorna 201 CREATED sin body
+        // Consumimos la respuesta como Unit para cerrar la conexión correctamente
+        // Si hay error (400, etc.), Ktor lanzará excepción automáticamente
+        client.post("$backendUrl/api/register") {
+            contentType(ContentType.Application.Json)
+            setBody(RegisterRequestDto(login = login, email = email, password = password, langKey = langKey))
+        }.body<Unit>()
     }
 }
 

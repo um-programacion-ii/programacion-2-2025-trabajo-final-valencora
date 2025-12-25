@@ -85,6 +85,7 @@ public class RedisWarmupService {
 
     /**
      * Intenta bloquear un asiento del evento hasta lograrlo o quedarse sin asientos.
+     * Si no puede bloquear ningún asiento con el método normal, recorre toda la matriz.
      * 
      * @param eventoId ID del evento en la cátedra
      * @return true si logró bloquear un asiento, false en caso contrario
@@ -97,7 +98,11 @@ public class RedisWarmupService {
             if (mapa == null) {
                 LOG.warn("Mapa de asientos es null para eventoId: {}", eventoId);
                 // Intentar bloquear asiento por defecto (fila 1, columna 1) para inicializar Redis
-                return bloquearAsiento(eventoId, "1", 1);
+                if (bloquearAsiento(eventoId, "1", 1)) {
+                    return true;
+                }
+                // Si falla, intentar recorrer toda la matriz
+                return recorrerTodaMatriz(eventoId);
             }
 
             List<MapaAsientosDTO.AsientoDTO> asientos = mapa.getAsientos();
@@ -116,8 +121,9 @@ public class RedisWarmupService {
                         }
                     }
                 }
-                LOG.warn("⚠️ No se pudo bloquear ningún asiento por defecto para eventoId: {} (puede que todos estén ocupados, el evento no tenga asientos, o el proxy no esté disponible)", eventoId);
-                return false;
+                LOG.warn("⚠️ No se pudo bloquear ningún asiento por defecto para eventoId: {}, recorriendo toda la matriz", eventoId);
+                // Si no pudo bloquear ningún asiento por defecto, recorrer toda la matriz
+                return recorrerTodaMatriz(eventoId);
             }
 
             // Buscar el primer asiento LIBRE en el mapa
@@ -144,10 +150,69 @@ public class RedisWarmupService {
                 }
             }
 
-            LOG.warn("No se encontró ningún asiento libre para bloquear en eventoId: {} después de {} intentos", eventoId, intentos);
-            return false;
+            LOG.warn("No se encontró ningún asiento libre para bloquear en eventoId: {} después de {} intentos, recorriendo toda la matriz", eventoId, intentos);
+            // Si no pudo bloquear ningún asiento libre, recorrer toda la matriz
+            return recorrerTodaMatriz(eventoId);
         } catch (Exception e) {
             LOG.error("Error al intentar bloquear asiento para eventoId: {}", eventoId, e);
+            // En caso de error, intentar recorrer toda la matriz como último recurso
+            return recorrerTodaMatriz(eventoId);
+        }
+    }
+
+    /**
+     * Recorre toda la matriz de asientos del evento intentando bloquear cada uno.
+     * 
+     * @param eventoId ID del evento en la cátedra
+     * @return true si logró bloquear un asiento, false en caso contrario
+     */
+    private boolean recorrerTodaMatriz(Long eventoId) {
+        try {
+            LOG.info("🔄 Recorriendo toda la matriz para eventoId: {}", eventoId);
+            
+            // Obtener el evento para acceder a las dimensiones
+            java.util.Optional<com.um.eventosbackend.domain.Evento> eventoOpt = 
+                eventoRepository.findByEventoIdCatedra(eventoId);
+            
+            if (eventoOpt.isEmpty()) {
+                LOG.warn("No se encontró el evento con eventoIdCatedra: {}", eventoId);
+                return false;
+            }
+            
+            com.um.eventosbackend.domain.Evento evento = eventoOpt.get();
+            Integer filas = evento.getFilaAsiento();
+            Integer columnas = evento.getColumnAsiento();
+            
+            if (filas == null || columnas == null || filas <= 0 || columnas <= 0) {
+                LOG.warn("Evento {} no tiene dimensiones válidas (filas={}, columnas={})", eventoId, filas, columnas);
+                return false;
+            }
+            
+            LOG.info("Recorriendo matriz completa: {} filas x {} columnas para eventoId: {}", filas, columnas, eventoId);
+            
+            // Recorrer toda la matriz fila por fila, columna por columna
+            for (int fila = 1; fila <= filas; fila++) {
+                for (int columna = 1; columna <= columnas; columna++) {
+                    if (bloquearAsiento(eventoId, String.valueOf(fila), columna)) {
+                        LOG.info("✅ Warm-up exitoso recorriendo matriz: eventoId={}, fila={}, columna={}", eventoId, fila, columna);
+                        return true;
+                    }
+                    // Pequeña pausa para no saturar el proxy
+                    try {
+                        Thread.sleep(50); // 50ms entre intentos
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        LOG.warn("Interrupción durante el recorrido de matriz");
+                        return false;
+                    }
+                }
+            }
+            
+            LOG.warn("❌ No se pudo bloquear ningún asiento después de recorrer toda la matriz ({} filas x {} columnas) para eventoId: {}", 
+                filas, columnas, eventoId);
+            return false;
+        } catch (Exception e) {
+            LOG.error("Error al recorrer toda la matriz para eventoId: {}", eventoId, e);
             return false;
         }
     }
