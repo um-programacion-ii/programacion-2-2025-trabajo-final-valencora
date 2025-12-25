@@ -3,24 +3,37 @@ package com.um.eventosmobile.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.AuthApi
-import kotlinx.coroutines.launch
+import com.um.eventosmobile.model.LoginEffect
+import com.um.eventosmobile.viewmodel.LoginViewModel
+import com.um.eventosmobile.viewmodel.LoginViewModelFactory
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     authApi: AuthApi,
-    onLoginSuccess: (String) -> Unit
+    onLoginSuccess: (String) -> Unit,
+    onRegisterClick: () -> Unit = {}, // Callback para navegar a la pantalla de registro
+    viewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory(authApi))
 ) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is LoginEffect.LoginSuccess -> {
+                    onLoginSuccess(effect.token)
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -45,37 +58,31 @@ fun LoginScreen(
             )
 
             OutlinedTextField(
-                value = username,
-                onValueChange = { 
-                    username = it
-                    error = null
-                },
+                value = uiState.username,
+                onValueChange = { viewModel.updateUsername(it) },
                 label = { Text("Usuario") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 20.dp),
-                enabled = !loading,
+                enabled = !uiState.isLoading,
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
-                value = password,
-                onValueChange = { 
-                    password = it
-                    error = null
-                },
+                value = uiState.password,
+                onValueChange = { viewModel.updatePassword(it) },
                 label = { Text("Contraseña") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 28.dp),
                 visualTransformation = PasswordVisualTransformation(),
-                enabled = !loading,
+                enabled = !uiState.isLoading,
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium
             )
 
-            error?.let {
+            uiState.error?.let {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -95,41 +102,18 @@ fun LoginScreen(
             }
 
             Button(
-                onClick = {
-                    if (username.isBlank() || password.isBlank()) {
-                        error = "Por favor complete todos los campos"
-                        return@Button
-                    }
-                    
-                    loading = true
-                    error = null
-                    scope.launch {
-                        try {
-                            val token = authApi.login(username.trim(), password)
-                            loading = false
-                            onLoginSuccess(token)
-                        } catch (e: Exception) {
-                            loading = false
-                            error = when {
-                                e.message?.contains("401") == true -> "Credenciales inválidas"
-                                e.message?.contains("403") == true -> "Acceso denegado"
-                                e.message?.contains("Network") == true -> "Error de conexión. Verifique su internet"
-                                else -> e.message ?: "Error al iniciar sesión"
-                            }
-                        }
-                    }
-                },
+                onClick = { viewModel.login() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = !loading && username.isNotBlank() && password.isNotBlank(),
+                enabled = !uiState.isLoading && uiState.username.isNotBlank() && uiState.password.isNotBlank(),
                 shape = MaterialTheme.shapes.large,
                 elevation = ButtonDefaults.buttonElevation(
                     defaultElevation = 4.dp,
                     pressedElevation = 8.dp
                 )
             ) {
-                if (loading) {
+                if (uiState.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary
@@ -140,6 +124,15 @@ fun LoginScreen(
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = onRegisterClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("¿No tienes una cuenta? Registrarse")
             }
         }
     }

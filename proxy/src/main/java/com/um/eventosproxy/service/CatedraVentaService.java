@@ -53,7 +53,7 @@ public class CatedraVentaService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             
-            // Preparar el request para la cátedra (formato según almaeq)
+            // Preparar el request para la cátedra 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("eventoId", request.getEventoId());
             requestBody.put("fecha", java.time.Instant.now().toString());
@@ -69,7 +69,6 @@ public class CatedraVentaService {
                 
                 if (i < nombresPersonas.size()) {
                     Map<String, String> nombrePersona = nombresPersonas.get(i);
-                    // Formato según almaeq: un solo campo "persona" con nombre completo
                     String nombreCompleto = nombrePersona.get("nombre") + " " + nombrePersona.get("apellido");
                     asientoConNombre.put("persona", nombreCompleto);
                 }

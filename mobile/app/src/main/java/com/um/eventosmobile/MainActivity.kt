@@ -22,17 +22,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         // URLs según el entorno
-        // Para emulador Android: http://10.0.2.2:8080 (backend) y http://10.0.2.2:8081 (proxy)
+        // Para emulador Android: http://10.0.2.2:8080 (backend)
         // Para dispositivo físico conectado por USB con adb reverse: 
-        //   - http://localhost:8080 (backend para login y eventos/sesión)
-        //   - http://localhost:8081 (proxy para mapa de asientos, bloquear y ventas)
-        // IMPORTANTE: Ejecutar "adb reverse tcp:8080 tcp:8080" y "adb reverse tcp:8081 tcp:8081" antes de usar la app
+        //   - http://localhost:8080 (backend - todas las operaciones)
+        // IMPORTANTE: Ejecutar "adb reverse tcp:8080 tcp:8080" antes de usar la app
+        // El backend actúa como orquestador y se comunica internamente con el proxy
         
-        // Backend: usado para autenticación (login) y operaciones de eventos/sesión
+        // Backend: usado para todas las operaciones (autenticación, eventos, sesión, asientos, ventas)
         val backendUrl = "http://localhost:8080"
-        
-        // Proxy: usado para mapa de asientos, bloquear asientos y confirmar venta
-        val proxyUrl = "http://localhost:8081"
         
         val authApi = AuthApi(backendUrl)
         val tokenStorage = TokenStorageAndroid(this)
@@ -53,11 +50,10 @@ class MainActivity : ComponentActivity() {
                         isLoadingToken = false
                     }
                     
-                    // MobileApi que usa el token actual - usa backend para eventos/sesión y proxy para asientos/ventas
+                    // MobileApi que usa el token actual - todas las operaciones van al backend
                     val mobileApi = remember(token) {
                         MobileApi(
                             backendUrl = backendUrl,
-                            proxyUrl = proxyUrl,
                             tokenProvider = { token }
                         )
                     }
@@ -71,16 +67,33 @@ class MainActivity : ComponentActivity() {
                             CircularProgressIndicator()
                         }
                     } else if (token == null) {
-                        // Mostrar pantalla de login si no hay token
-                        LoginScreen(
-                            authApi = authApi,
-                            onLoginSuccess = { newToken ->
-                                scope.launch {
-                                    tokenStorage.saveToken(newToken)
-                                    token = newToken
+                        // Navegación entre login y registro
+                        var showRegister by remember { mutableStateOf(false) }
+                        
+                        if (showRegister) {
+                            RegisterScreen(
+                                authApi = authApi,
+                                onRegisterSuccess = {
+                                    showRegister = false
+                                },
+                                onBackToLogin = {
+                                    showRegister = false
                                 }
-                            }
-                        )
+                            )
+                        } else {
+                            LoginScreen(
+                                authApi = authApi,
+                                onLoginSuccess = { newToken ->
+                                    scope.launch {
+                                        tokenStorage.saveToken(newToken)
+                                        token = newToken
+                                    }
+                                },
+                                onRegisterClick = {
+                                    showRegister = true
+                                }
+                            )
+                        }
                     } else {
                         // Navegación entre pantallas
                         var currentScreen by remember { mutableStateOf<Screen>(Screen.EventList) }

@@ -1,9 +1,10 @@
-package com.um.eventosmobile.ui.state
+package com.um.eventosmobile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.um.eventosmobile.shared.EventDetail
+import com.um.eventosmobile.model.EventDetailEffect
+import com.um.eventosmobile.model.EventDetailUiState
 import com.um.eventosmobile.shared.MobileApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,20 +13,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-data class EventDetailUiState(
-    val event: EventDetail? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
-
-sealed class EventDetailEffect {
-    data class ResumeSelection(
-        val eventId: Long,
-        val seats: List<Pair<String, Int>>,
-        val expiresAt: String?
-    ) : EventDetailEffect()
-}
 
 class EventDetailViewModel(
     private val api: MobileApi,

@@ -26,9 +26,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.um.eventosmobile.shared.MobileApi
 import com.um.eventosmobile.shared.Seat
 import com.um.eventosmobile.shared.SeatStatus
-import com.um.eventosmobile.ui.state.SeatSelectionEffect
-import com.um.eventosmobile.ui.state.SeatSelectionViewModel
-import com.um.eventosmobile.ui.state.SeatSelectionViewModelFactory
+import com.um.eventosmobile.model.SeatSelectionEffect
+import com.um.eventosmobile.viewmodel.SeatSelectionViewModel
+import com.um.eventosmobile.viewmodel.SeatSelectionViewModelFactory
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)

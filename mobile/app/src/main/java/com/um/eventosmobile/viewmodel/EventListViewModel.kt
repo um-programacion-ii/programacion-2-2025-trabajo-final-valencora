@@ -1,20 +1,14 @@
-package com.um.eventosmobile.ui.state
+package com.um.eventosmobile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.um.eventosmobile.shared.EventSummary
+import com.um.eventosmobile.model.EventListUiState
 import com.um.eventosmobile.shared.MobileApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-data class EventListUiState(
-    val events: List<EventSummary> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
 
 class EventListViewModel(
     private val api: MobileApi

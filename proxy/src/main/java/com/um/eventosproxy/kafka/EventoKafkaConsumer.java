@@ -19,9 +19,14 @@ public class EventoKafkaConsumer {
 
     public EventoKafkaConsumer(BackendSyncService backendSyncService) {
         this.backendSyncService = backendSyncService;
+        LOG.info("📦 EventoKafkaConsumer inicializado. El listener se conectará cuando Kafka esté disponible.");
     }
 
-    @KafkaListener(topics = "${application.kafka.topic.eventos}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(
+        topics = "${application.kafka.topic.eventos}", 
+        groupId = "${spring.kafka.consumer.group-id}",
+        errorHandler = "kafkaErrorHandler"
+    )
     public void consumeEventoChange(
         @Payload String message,
         @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
@@ -49,4 +54,3 @@ public class EventoKafkaConsumer {
         }
     }
 }
-

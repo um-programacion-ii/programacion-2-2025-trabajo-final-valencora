@@ -24,9 +24,9 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.um.eventosmobile.shared.EventDetail
 import com.um.eventosmobile.shared.MobileApi
-import com.um.eventosmobile.ui.state.EventDetailEffect
-import com.um.eventosmobile.ui.state.EventDetailViewModel
-import com.um.eventosmobile.ui.state.EventDetailViewModelFactory
+import com.um.eventosmobile.model.EventDetailEffect
+import com.um.eventosmobile.viewmodel.EventDetailViewModel
+import com.um.eventosmobile.viewmodel.EventDetailViewModelFactory
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

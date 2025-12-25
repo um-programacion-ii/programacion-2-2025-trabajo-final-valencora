@@ -128,17 +128,19 @@ public class UserService {
         }
         newUser.setImageUrl(userDTO.getImageUrl());
         newUser.setLangKey(userDTO.getLangKey());
-        // new user is not active
-        newUser.setActivated(false);
-        // new user gets registration key
-        newUser.setActivationKey(RandomUtil.generateActivationKey());
+        // new user is active immediately (no activation required)
+        newUser.setActivated(true);
+        // no activation key needed
+        newUser.setActivationKey(null);
         Set<Authority> authorities = new HashSet<>();
         authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
         newUser.setAuthorities(authorities);
         userRepository.save(newUser);
-        userSearchRepository.save(newUser);
+        // No indexar en Elasticsearch durante el registro para evitar timeouts
+        // El usuario se guarda correctamente en PostgreSQL y la app funciona sin Elasticsearch
         this.clearUserCaches(newUser);
         LOG.debug("Created Information for User: {}", newUser);
+        LOG.debug("User activated status after save: {}", newUser.isActivated());
         return newUser;
     }
 
