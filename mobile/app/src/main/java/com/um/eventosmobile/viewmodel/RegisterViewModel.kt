@@ -65,26 +65,18 @@ class RegisterViewModel(
             } catch (e: Exception) {
                 val errorMessage = e.message ?: e.toString()
                 val error = when {
-                    errorMessage.contains("400") == true -> {
+                    errorMessage.contains("400") -> {
                         when {
-                            errorMessage.contains("login") == true ||
-                            errorMessage.contains("username") == true ||
-                            errorMessage.contains("LOGIN_ALREADY_USED") == true ->
+                            errorMessage.contains("login") || errorMessage.contains("username") || errorMessage.contains("LOGIN_ALREADY_USED") ->
                                 "El nombre de usuario ya está en uso"
-                            errorMessage.contains("email") == true ||
-                            errorMessage.contains("EMAIL_ALREADY_USED") == true ->
+                            errorMessage.contains("email") || errorMessage.contains("EMAIL_ALREADY_USED") ->
                                 "El correo electrónico ya está en uso"
                             else -> "Datos inválidos. Verifique la información ingresada"
                         }
                     }
-                    errorMessage.contains("timeout") == true ||
-                    errorMessage.contains("Socket timeout") == true ||
-                    errorMessage.contains("timed out") == true ->
+                    errorMessage.contains("timeout") || errorMessage.contains("Socket timeout") || errorMessage.contains("timed out") ->
                         "Error de conexión. Verifique que el backend esté corriendo y ejecute: adb reverse tcp:8080 tcp:8080"
-                    errorMessage.contains("Network") == true ||
-                    errorMessage.contains("Unable to resolve") == true ||
-                    errorMessage.contains("failed to connect") == true ||
-                    errorMessage.contains("Connection refused") == true ->
+                    errorMessage.contains("Network") || errorMessage.contains("Unable to resolve") || errorMessage.contains("failed to connect") || errorMessage.contains("Connection refused") ->
                         "Error de conexión. Verifique que el backend esté corriendo en localhost:8080 y ejecute: adb reverse tcp:8080 tcp:8080"
                     else -> "Error al registrarse: $errorMessage"
                 }

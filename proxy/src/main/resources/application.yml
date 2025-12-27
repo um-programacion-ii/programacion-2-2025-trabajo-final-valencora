@@ -2,7 +2,6 @@ spring:
   application:
     name: proxy
   kafka:
-    # Usar IP directamente para evitar problemas de resolución DNS
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:192.168.194.250:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:valencoratolo-2025}
@@ -10,38 +9,8 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       enable-auto-commit: true
-      properties:
-        # Configuración para hacer el consumer más resiliente
-        # Tiempo máximo para esperar metadata del broker (en ms) - 5 minutos
-        max.poll.interval.ms: 300000
-        # Tiempo de sesión (en ms) - 30 segundos
-        session.timeout.ms: 30000
-        # Heartbeat interval (en ms) - 10 segundos
-        heartbeat.interval.ms: 10000
-        # Retry configuration
-        retry.backoff.ms: 1000
-        # Connection timeout - 9 minutos
-        connections.max.idle.ms: 540000
-        # Metadata fetch timeout
-        metadata.max.age.ms: 300000
-        # Configuración DNS para manejar nombres de brokers
-        # 'use_all_dns_ips' intenta resolver todos los IPs si el broker se anuncia con un nombre
-        # Nota: Si el broker se anuncia como "kafka" y no se puede resolver, verás warnings
-        # pero la aplicación seguirá funcionando ya que Spring Kafka usará el bootstrap server
-        client.dns.lookup: use_all_dns_ips
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      properties:
-        # Configuración para hacer el producer más resiliente
-        retries: 3
-        retry.backoff.ms: 1000
-        request.timeout.ms: 30000
-        delivery.timeout.ms: 120000
     listener:
-      # Configurar el listener para que sea más tolerante a errores
       missing-topics-fatal: false
-      # Permitir que el listener continúe aunque el topic no exista
       auto-startup: true
   data:
     redis:
@@ -77,8 +46,6 @@ logging:
     com.um.eventosproxy: DEBUG
     org.springframework.kafka: INFO
     org.apache.kafka: WARN
-    # Reducir logs de conexión de Kafka - estos warnings son normales si Kafka
-    # se anuncia con un nombre de host que no se puede resolver (ej: "kafka")
-    # La aplicación seguirá funcionando ya que usa el bootstrap server
-    org.apache.kafka.clients.NetworkClient: ERROR
-    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: ERROR
+    org.apache.kafka.clients.consumer: INFO
+    org.apache.kafka.clients.NetworkClient: WARN
+    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN

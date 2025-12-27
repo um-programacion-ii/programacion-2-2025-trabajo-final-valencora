@@ -25,6 +25,11 @@ fun RegisterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Resetear el estado cuando se navega a esta pantalla
+    LaunchedEffect(Unit) {
+        viewModel.resetSuccess()
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
@@ -40,7 +45,10 @@ fun RegisterScreen(
             TopAppBar(
                 title = { Text("Registrarse") },
                 navigationIcon = {
-                    TextButton(onClick = onBackToLogin) {
+                    TextButton(onClick = {
+                        viewModel.resetSuccess()
+                        onBackToLogin()
+                    }) {
                         Text("← Volver")
                     }
                 }
@@ -89,7 +97,10 @@ fun RegisterScreen(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         Button(
-                            onClick = onBackToLogin,
+                            onClick = {
+                                viewModel.resetSuccess()
+                                onBackToLogin()
+                            },
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Volver al login")
@@ -182,7 +193,10 @@ fun RegisterScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 TextButton(
-                    onClick = onBackToLogin,
+                    onClick = {
+                        viewModel.resetSuccess()
+                        onBackToLogin()
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("¿Ya tienes una cuenta? Iniciar sesión")
