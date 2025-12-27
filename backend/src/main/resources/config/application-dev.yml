@@ -15,10 +15,20 @@
 
 logging:
   level:
-    ROOT: DEBUG
-    tech.jhipster: DEBUG
-    org.hibernate.SQL: DEBUG
-    com.um.eventosbackend: DEBUG
+    ROOT: INFO
+    tech.jhipster: INFO
+    org.hibernate.SQL: WARN
+    com.um.eventosbackend: INFO
+    org.springframework: INFO
+    org.hibernate: WARN
+    org.apache.kafka: WARN
+    org.springframework.kafka: WARN
+    org.springframework.web: INFO  
+    org.springframework.security: WARN
+    org.springframework.messaging: WARN
+    org.springframework.web.socket: WARN
+    org.springframework.messaging.simp: WARN
+    com.um.eventosbackend.web: DEBUG 
 
 spring:
   devtools:
